@@ -98,7 +98,7 @@ export default function HeaderIdentityBar({
                 </span>
               </div>
               <h1 className="text-lg sm:text-2xl font-bold text-[#f4f4f5] tracking-[-0.025em] leading-tight print:text-black">
-                Matematika Teknik (M12) — Angle Conversion, Basic Calculator &amp; Sinusoidal Waveform Simulator
+                Matematika Teknik (M12) — Angle Conversion, Scientific Calculator &amp; Sinusoidal Waveform Simulator
               </h1>
             </div>
           </div>

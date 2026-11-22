@@ -105,7 +105,7 @@ export default function PrintReportSheet({
           </div>
           <h1 className="text-base font-bold text-zinc-950 tracking-tight mt-0.5">
             {activeTab === 'tujuan' &&
-              '1. Tujuan Pembelajaran, Referensi Rumus & Log Kalkulator Aritmatika Dasar'}
+              '1. Tujuan Pembelajaran, Referensi Rumus & Log Scientific Calculator'}
             {activeTab === 'konversi' &&
               '2. Laporan Praktikum Konversi Satuan Sudut (Mode A, Mode B, Mode C)'}
             {activeTab === 'sinusoidal' &&

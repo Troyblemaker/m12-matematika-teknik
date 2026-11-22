@@ -16,6 +16,12 @@ const DECIMAL_PI = new Decimal(
   '3.14159265358979323846264338327950288419716939937510'
 );
 
+const DECIMAL_E = new Decimal(
+  '2.71828182845904523536028747135266249775724709369995'
+);
+
+export type CalculatorAngleUnit = 'DEG' | 'RAD';
+
 /**
  * Greatest Common Divisor for positive integers
  */
@@ -40,26 +46,64 @@ export function positiveModulo2Pi(x: number): number {
 }
 
 // ============================================================================
-// 1. EXACT DECIMAL.JS ARITHMETIC ENGINE (Tab 1 Calculator & Symbolic Parser)
+// 1. EXACT DECIMAL.JS SCIENTIFIC ENGINE (Tab 1 Scientific Calculator & Parser)
 // ============================================================================
 
-type TokenType = 'NUMBER' | 'PI' | 'OP' | 'LPAREN' | 'RPAREN';
+type TokenType =
+  | 'NUMBER'
+  | 'CONST'
+  | 'ANS'
+  | 'FUNC'
+  | 'OP'
+  | 'POSTFIX'
+  | 'LPAREN'
+  | 'RPAREN';
 
 interface Token {
   type: TokenType;
   value: string;
 }
 
+const SCIENTIFIC_FUNCTIONS = new Set([
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+  'arcsin',
+  'arccos',
+  'arctan',
+  'sinh',
+  'cosh',
+  'tanh',
+  'ln',
+  'log',
+  'log10',
+  'exp',
+  'sqrt',
+  'cbrt',
+  'abs',
+  'rad',
+  'deg',
+]);
+
 /**
- * Tokenizes an arithmetic or symbolic-π expression string.
- * Supports +, -, *, ×, /, ÷, (, ), π, pi, and decimal numbers (with . or ,).
- * Automatically inserts implicit multiplication (e.g., "3π" -> "3 * π", "2(3)" -> "2 * (3)").
+ * Tokenizes a scientific arithmetic or symbolic-π expression string.
+ * Supports:
+ * - Basic operators: +, -, *, ×, /, ÷, ^, mod
+ * - Postfix operators: ! (factorial), % (percent), ² (square), ³ (cube)
+ * - Prefix root symbols: √ (sqrt), ∛ (cbrt)
+ * - Scientific functions: sin, cos, tan, asin, acos, atan, sinh, cosh, tanh,
+ *   ln, log, log10, exp, sqrt, cbrt, abs, rad, deg
+ * - Constants: π, pi, e, Ans
+ * - Automatically inserts implicit multiplication (e.g., "3π" -> "3 * π", "2sin(30)" -> "2 * sin(30)").
  */
 function tokenizeExpression(raw: string): Token[] {
   const cleaned = raw
     .trim()
     .replace(/rad\/s/gi, '')
-    .replace(/rad/gi, '')
+    .replace(/\brad\b(?!\s*\()/gi, '')
     .replace(/°/g, '')
     .replace(/,/g, '.')
     .replace(/×/g, '*')
@@ -102,13 +146,63 @@ function tokenizeExpression(raw: string): Token[] {
       continue;
     }
 
-    if (ch === 'π' || cleaned.slice(i, i + 2).toLowerCase() === 'pi') {
-      rawTokens.push({ type: 'PI', value: 'π' });
-      i += ch === 'π' ? 1 : 2;
+    if (ch === 'π') {
+      rawTokens.push({ type: 'CONST', value: 'π' });
+      i++;
       continue;
     }
 
-    if (ch === '+' || ch === '-' || ch === '*' || ch === '/') {
+    if (ch === '√') {
+      rawTokens.push({ type: 'FUNC', value: 'sqrt' });
+      i++;
+      continue;
+    }
+
+    if (ch === '∛') {
+      rawTokens.push({ type: 'FUNC', value: 'cbrt' });
+      i++;
+      continue;
+    }
+
+    if (ch === '²' || ch === '³' || ch === '!' || ch === '%') {
+      rawTokens.push({ type: 'POSTFIX', value: ch });
+      i++;
+      continue;
+    }
+
+    if (/[a-zA-Z]/.test(ch)) {
+      let ident = '';
+      while (i < cleaned.length && /[a-zA-Z0-9]/.test(cleaned[i])) {
+        ident += cleaned[i];
+        i++;
+      }
+      const lower = ident.toLowerCase();
+
+      if (lower === 'pi') {
+        rawTokens.push({ type: 'CONST', value: 'π' });
+        continue;
+      }
+      if (lower === 'e') {
+        rawTokens.push({ type: 'CONST', value: 'e' });
+        continue;
+      }
+      if (lower === 'ans') {
+        rawTokens.push({ type: 'ANS', value: 'Ans' });
+        continue;
+      }
+      if (lower === 'mod') {
+        rawTokens.push({ type: 'OP', value: 'mod' });
+        continue;
+      }
+      if (SCIENTIFIC_FUNCTIONS.has(lower)) {
+        rawTokens.push({ type: 'FUNC', value: lower });
+        continue;
+      }
+
+      throw new Error(`Fungsi atau simbol tidak dikenali: "${ident}"`);
+    }
+
+    if (ch === '+' || ch === '-' || ch === '*' || ch === '/' || ch === '^') {
       rawTokens.push({ type: 'OP', value: ch });
       i++;
       continue;
@@ -130,7 +224,7 @@ function tokenizeExpression(raw: string): Token[] {
   }
 
   // Insert implicit multiplication tokens where appropriate:
-  // e.g., NUMBER followed by PI or LPAREN; PI followed by NUMBER, PI, or LPAREN; RPAREN followed by NUMBER, PI, or LPAREN
+  // e.g., NUMBER/CONST/ANS/RPAREN/POSTFIX followed by CONST/ANS/FUNC/LPAREN/NUMBER
   const tokens: Token[] = [];
   for (let idx = 0; idx < rawTokens.length; idx++) {
     const curr = rawTokens[idx];
@@ -139,9 +233,15 @@ function tokenizeExpression(raw: string): Token[] {
     if (idx + 1 < rawTokens.length) {
       const next = rawTokens[idx + 1];
       const currIsValue =
-        curr.type === 'NUMBER' || curr.type === 'PI' || curr.type === 'RPAREN';
+        curr.type === 'NUMBER' ||
+        curr.type === 'CONST' ||
+        curr.type === 'ANS' ||
+        curr.type === 'RPAREN' ||
+        curr.type === 'POSTFIX';
       const nextStartsValue =
-        next.type === 'PI' ||
+        next.type === 'CONST' ||
+        next.type === 'ANS' ||
+        next.type === 'FUNC' ||
         next.type === 'LPAREN' ||
         (curr.type !== 'NUMBER' && next.type === 'NUMBER');
 
@@ -154,15 +254,127 @@ function tokenizeExpression(raw: string): Token[] {
   return tokens;
 }
 
+function computeFactorial(val: Decimal): Decimal {
+  if (!val.isInteger() || val.isNegative()) {
+    throw new Error('Faktorial (n!) hanya untuk bilangan bulat n ≥ 0.');
+  }
+  const n = val.toNumber();
+  if (n > 170) {
+    throw new Error('Faktorial terlalu besar (maksimum 170!).');
+  }
+  let res = new Decimal(1);
+  for (let k = 2; k <= n; k++) {
+    res = res.times(k);
+  }
+  return res;
+}
+
+function applyScientificFunction(
+  fn: string,
+  arg: Decimal,
+  angleUnit: CalculatorAngleUnit
+): Decimal {
+  const toRadians = (val: Decimal) =>
+    angleUnit === 'DEG' ? val.times(DECIMAL_PI).dividedBy(180) : val;
+  const fromRadians = (rad: Decimal) =>
+    angleUnit === 'DEG' ? rad.times(180).dividedBy(DECIMAL_PI) : rad;
+
+  switch (fn) {
+    case 'sin': {
+      const rad = toRadians(arg);
+      const res = rad.sin();
+      return res.abs().lessThan('1e-14') ? new Decimal(0) : res;
+    }
+    case 'cos': {
+      const rad = toRadians(arg);
+      const res = rad.cos();
+      return res.abs().lessThan('1e-14') ? new Decimal(0) : res;
+    }
+    case 'tan': {
+      const rad = toRadians(arg);
+      const cosVal = rad.cos();
+      if (cosVal.abs().lessThan('1e-14')) {
+        throw new Error('Tak terdefinisi (Asimtot tan 90° / π/2).');
+      }
+      const sinVal = rad.sin();
+      return sinVal.abs().lessThan('1e-14')
+        ? new Decimal(0)
+        : sinVal.dividedBy(cosVal);
+    }
+    case 'asin':
+    case 'arcsin': {
+      if (arg.abs().greaterThan(1)) {
+        throw new Error('Domain asin(x) harus berada pada [-1, 1].');
+      }
+      return fromRadians(arg.asin());
+    }
+    case 'acos':
+    case 'arccos': {
+      if (arg.abs().greaterThan(1)) {
+        throw new Error('Domain acos(x) harus berada pada [-1, 1].');
+      }
+      return fromRadians(arg.acos());
+    }
+    case 'atan':
+    case 'arctan': {
+      return fromRadians(arg.atan());
+    }
+    case 'sinh':
+      return arg.sinh();
+    case 'cosh':
+      return arg.cosh();
+    case 'tanh':
+      return arg.tanh();
+    case 'ln': {
+      if (arg.lessThanOrEqualTo(0)) {
+        throw new Error('Domain ln(x) harus lebih besar dari 0.');
+      }
+      return arg.ln();
+    }
+    case 'log':
+    case 'log10': {
+      if (arg.lessThanOrEqualTo(0)) {
+        throw new Error('Domain log(x) harus lebih besar dari 0.');
+      }
+      return arg.log(10);
+    }
+    case 'exp':
+      return arg.exp();
+    case 'sqrt': {
+      if (arg.lessThan(0)) {
+        throw new Error('Akar kuadrat (√) bilangan negatif tidak real.');
+      }
+      return arg.sqrt();
+    }
+    case 'cbrt':
+      return arg.cbrt();
+    case 'abs':
+      return arg.abs();
+    case 'rad':
+      return arg.times(DECIMAL_PI).dividedBy(180);
+    case 'deg':
+      return arg.times(180).dividedBy(DECIMAL_PI);
+    default:
+      throw new Error(`Fungsi tidak dikenali: "${fn}"`);
+  }
+}
+
 /**
- * Recursive descent parser evaluating tokens using Decimal.js
+ * Recursive descent parser evaluating scientific tokens using Decimal.js
  * Grammar:
- *   Expr   -> Term (( '+' | '-' ) Term)*
- *   Term   -> Factor (( '*' | '/' ) Factor)*
- *   Factor -> ('+' | '-') Factor | Primary
- *   Primary -> NUMBER | PI | '(' Expr ')'
+ *   Expr    -> Term (( '+' | '-' ) Term)*
+ *   Term    -> Unary (( '*' | '/' | 'mod' ) Unary)*
+ *   Unary   -> ('+' | '-') Unary | Power
+ *   Power   -> Postfix ( '^' Unary )?
+ *   Postfix -> FuncOrPrimary ( '!' | '%' | '²' | '³' )*
+ *   FuncOrPrimary -> FUNC ( '(' Expr ')' | Unary ) | Primary
+ *   Primary -> NUMBER | CONST | ANS | '(' Expr ')'
  */
-function parseTokensToDecimal(tokens: Token[]): Decimal {
+function parseTokensToDecimal(
+  tokens: Token[],
+  angleUnit: CalculatorAngleUnit = 'DEG',
+  ansValue: Decimal = new Decimal(0)
+): Decimal {
   let pos = 0;
 
   function parseExpr(): Decimal {
@@ -181,20 +393,27 @@ function parseTokensToDecimal(tokens: Token[]): Decimal {
   }
 
   function parseTerm(): Decimal {
-    let left = parseFactor();
+    let left = parseUnary();
     while (
       pos < tokens.length &&
       tokens[pos].type === 'OP' &&
-      (tokens[pos].value === '*' || tokens[pos].value === '/')
+      (tokens[pos].value === '*' ||
+        tokens[pos].value === '/' ||
+        tokens[pos].value === 'mod')
     ) {
       const op = tokens[pos].value;
       pos++;
-      const right = parseFactor();
+      const right = parseUnary();
       if (op === '/') {
         if (right.isZero()) {
           throw new Error('Tidak dapat membagi dengan nol (Division by Zero).');
         }
         left = left.dividedBy(right);
+      } else if (op === 'mod') {
+        if (right.isZero()) {
+          throw new Error('Tidak dapat modulo dengan nol (Modulo by Zero).');
+        }
+        left = left.modulo(right);
       } else {
         left = left.times(right);
       }
@@ -202,7 +421,7 @@ function parseTokensToDecimal(tokens: Token[]): Decimal {
     return left;
   }
 
-  function parseFactor(): Decimal {
+  function parseUnary(): Decimal {
     if (
       pos < tokens.length &&
       tokens[pos].type === 'OP' &&
@@ -210,8 +429,66 @@ function parseTokensToDecimal(tokens: Token[]): Decimal {
     ) {
       const op = tokens[pos].value;
       pos++;
-      const operand = parseFactor();
+      const operand = parseUnary();
       return op === '-' ? operand.negated() : operand;
+    }
+    return parsePower();
+  }
+
+  function parsePower(): Decimal {
+    let base = parsePostfix();
+    if (
+      pos < tokens.length &&
+      tokens[pos].type === 'OP' &&
+      tokens[pos].value === '^'
+    ) {
+      pos++;
+      const exponent = parseUnary();
+      if (base.isZero() && exponent.isNegative()) {
+        throw new Error('Tidak dapat membagi dengan nol (0 pangkat negatif).');
+      }
+      if (base.isNegative() && !exponent.isInteger()) {
+        throw new Error('Pangkat pecahan dari bilangan negatif tidak real.');
+      }
+      base = base.pow(exponent);
+    }
+    return base;
+  }
+
+  function parsePostfix(): Decimal {
+    let val = parseFuncOrPrimary();
+    while (pos < tokens.length && tokens[pos].type === 'POSTFIX') {
+      const op = tokens[pos].value;
+      pos++;
+      if (op === '!') {
+        val = computeFactorial(val);
+      } else if (op === '%') {
+        val = val.dividedBy(100);
+      } else if (op === '²') {
+        val = val.pow(2);
+      } else if (op === '³') {
+        val = val.pow(3);
+      }
+    }
+    return val;
+  }
+
+  function parseFuncOrPrimary(): Decimal {
+    if (pos < tokens.length && tokens[pos].type === 'FUNC') {
+      const fnName = tokens[pos].value;
+      pos++;
+      let arg: Decimal;
+      if (pos < tokens.length && tokens[pos].type === 'LPAREN') {
+        pos++;
+        arg = parseExpr();
+        if (pos >= tokens.length || tokens[pos].type !== 'RPAREN') {
+          throw new Error(`Kurung tutup ")" untuk ${fnName}(...) tidak ditemukan.`);
+        }
+        pos++;
+      } else {
+        arg = parseUnary();
+      }
+      return applyScientificFunction(fnName, arg, angleUnit);
     }
     return parsePrimary();
   }
@@ -227,9 +504,14 @@ function parseTokensToDecimal(tokens: Token[]): Decimal {
       return new Decimal(tok.value);
     }
 
-    if (tok.type === 'PI') {
+    if (tok.type === 'CONST') {
       pos++;
-      return DECIMAL_PI;
+      return tok.value === 'e' ? DECIMAL_E : DECIMAL_PI;
+    }
+
+    if (tok.type === 'ANS') {
+      pos++;
+      return ansValue;
     }
 
     if (tok.type === 'LPAREN') {
@@ -255,23 +537,50 @@ function parseTokensToDecimal(tokens: Token[]): Decimal {
 export interface ArithmeticEvaluation {
   isValid: boolean;
   formattedResult: string;
+  scientificNotation?: string;
   numericValue: number;
   error?: string;
 }
 
+export interface ArithmeticEvalOptions {
+  angleUnit?: CalculatorAngleUnit;
+  ans?: number | string;
+}
+
 /**
- * Evaluates a basic arithmetic expression using Decimal.js to avoid IEEE 754 drift.
- * Example: evaluateArithmetic("0.1 + 0.2") -> { isValid: true, formattedResult: "0.3", numericValue: 0.3 }
+ * Evaluates a scientific or basic arithmetic expression using Decimal.js to avoid IEEE 754 drift.
+ * Example:
+ * - evaluateArithmetic("0.1 + 0.2") -> { isValid: true, formattedResult: "0.3", numericValue: 0.3 }
+ * - evaluateArithmetic("sin(30)", "DEG") -> { isValid: true, formattedResult: "0.5", numericValue: 0.5 }
  */
-export function evaluateArithmetic(expression: string): ArithmeticEvaluation {
+export function evaluateArithmetic(
+  expression: string,
+  options?: CalculatorAngleUnit | ArithmeticEvalOptions
+): ArithmeticEvaluation {
   try {
+    const angleUnit: CalculatorAngleUnit =
+      typeof options === 'string'
+        ? options
+        : options?.angleUnit ?? 'DEG';
+    const rawAns =
+      typeof options === 'object' && options?.ans !== undefined
+        ? options.ans
+        : 0;
+    const ansDecimal =
+      Number.isFinite(Number(rawAns)) ? new Decimal(rawAns) : new Decimal(0);
+
     const tokens = tokenizeExpression(expression);
-    const decResult = parseTokensToDecimal(tokens);
+    const decResult = parseTokensToDecimal(tokens, angleUnit, ansDecimal);
     // Round to 12 decimal places to clean any irrational tail while preserving exact decimals like 0.3
     const rounded = decResult.toDecimalPlaces(12, Decimal.ROUND_HALF_UP);
+    const sciStr = decResult.isZero()
+      ? '0'
+      : decResult.toExponential(4).replace('e+', ' × 10^').replace('e', ' × 10^');
+
     return {
       isValid: true,
       formattedResult: rounded.toString(),
+      scientificNotation: sciStr,
       numericValue: rounded.toNumber(),
     };
   } catch (err) {
@@ -296,7 +605,7 @@ export function parseSymbolicPi(input: string | number): number {
   if (!trimmed) {
     return NaN;
   }
-  const evaluated = evaluateArithmetic(trimmed);
+  const evaluated = evaluateArithmetic(trimmed, 'RAD');
   if (!evaluated.isValid) {
     return NaN;
   }

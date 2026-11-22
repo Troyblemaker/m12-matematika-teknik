@@ -33,6 +33,28 @@ describe('M12 Math Engine — Exact Arithmetic (Decimal.js)', () => {
     expect(res.isValid).toBe(false);
     expect(res.error).toContain('Division by Zero');
   });
+
+  it('evaluates scientific trigonometric, logarithmic, factorial, power, root, and Ans expressions in DEG and RAD modes', () => {
+    // DEG mode trig
+    expect(evaluateArithmetic('sin(30) + cos(60)', 'DEG').formattedResult).toBe('1');
+    expect(evaluateArithmetic('tan(45)', 'DEG').formattedResult).toBe('1');
+    expect(evaluateArithmetic('asin(0.5)', 'DEG').formattedResult).toBe('30');
+    expect(evaluateArithmetic('atan(1)', 'DEG').formattedResult).toBe('45');
+
+    // RAD mode trig (Soal P12 at t = 0.01s)
+    const p12Eval = evaluateArithmetic('340 × sin(50π × 0.01 - 0.541)', 'RAD');
+    expect(p12Eval.isValid).toBe(true);
+    expect(p12Eval.numericValue).toBeCloseTo(291.45, 2);
+
+    // Factorial, powers, logarithms, Euler's e, and roots
+    expect(evaluateArithmetic('5! + 2^8 + ln(e^3)').formattedResult).toBe('379');
+    expect(evaluateArithmetic('log(1000) + √(144) + 3²').formattedResult).toBe('24');
+
+    // Ans variable substitution
+    expect(
+      evaluateArithmetic('Ans × 2 + 10', { angleUnit: 'DEG', ans: 15 }).formattedResult
+    ).toBe('40');
+  });
 });
 
 describe('M12 Math Engine — Hub-and-Spoke Angle Conversion', () => {

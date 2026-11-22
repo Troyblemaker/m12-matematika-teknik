@@ -4,14 +4,16 @@ import React, { useMemo, useState } from 'react';
 import {
   ArrowRight,
   Calculator,
+  Check,
   Compass,
+  Copy,
   GitCompareArrows,
   Play,
   PlusCircle,
   Trash2,
   Waves,
 } from 'lucide-react';
-import { evaluateArithmetic } from '@/lib/math-engine';
+import { CalculatorAngleUnit, evaluateArithmetic } from '@/lib/math-engine';
 import {
   AngleLogEntry,
   ArithmeticLogEntry,
@@ -32,31 +34,47 @@ interface Tab1LearningAndCalcProps {
   onLoadSampleToSimulator: (sample: SinusoidalInputParams) => void;
 }
 
-const KEYPAD_BUTTONS = [
-  { label: 'C', action: 'clear', style: 'bg-[#2a1a1d] text-red-300 border-red-500/30 hover:bg-red-950/60' },
-  { label: '(', value: '(', style: 'bg-[#222227] text-[#c4c9cf] border-white/[0.14] hover:bg-[#2c2c33] hover:text-[#f4f4f5]' },
-  { label: ')', value: ')', style: 'bg-[#222227] text-[#c4c9cf] border-white/[0.14] hover:bg-[#2c2c33] hover:text-[#f4f4f5]' },
-  { label: '⌫', action: 'backspace', style: 'bg-[#222227] text-[#c4c9cf] border-white/[0.14] hover:bg-[#2c2c33] hover:text-[#f4f4f5]' },
+interface ScientificPreset {
+  label: string;
+  expr: string;
+  note: string;
+  mode?: CalculatorAngleUnit;
+}
 
-  { label: '7', value: '7', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: '8', value: '8', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: '9', value: '9', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: '÷', value: ' ÷ ', style: 'bg-[#222227] text-[#2f6bff] border-white/[0.16] hover:bg-[#2c2c33] font-bold' },
-
-  { label: '4', value: '4', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: '5', value: '5', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: '6', value: '6', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: '×', value: ' × ', style: 'bg-[#222227] text-[#2f6bff] border-white/[0.16] hover:bg-[#2c2c33] font-bold' },
-
-  { label: '1', value: '1', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: '2', value: '2', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: '3', value: '3', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: '-', value: ' - ', style: 'bg-[#222227] text-[#2f6bff] border-white/[0.16] hover:bg-[#2c2c33] font-bold' },
-
-  { label: '0', value: '0', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: '.', value: '.', style: 'bg-[#101013] text-[#f4f4f5] border-white/[0.14] hover:bg-[#222227]' },
-  { label: 'π', value: 'π', style: 'bg-[#222227] text-[#35ff92] border-white/[0.16] hover:bg-[#2c2c33] font-bold' },
-  { label: '+', value: ' + ', style: 'bg-[#222227] text-[#2f6bff] border-white/[0.16] hover:bg-[#2c2c33] font-bold' },
+const SCIENTIFIC_PRESETS: ScientificPreset[] = [
+  {
+    label: 'Soal P12: 340·sin(50π·0.01 - 0.541)',
+    expr: '340 × sin(50π × 0.01 - 0.541)',
+    note: 'Tegangan sesaat Soal P12 saat t = 10 ms (Mode RAD)',
+    mode: 'RAD',
+  },
+  {
+    label: 'sin(30°) + cos(60°)',
+    expr: 'sin(30) + cos(60)',
+    note: 'Trigonometri sudut istimewa (Mode DEG)',
+    mode: 'DEG',
+  },
+  {
+    label: 'V_rms = 340 / √2',
+    expr: '340 ÷ √(2)',
+    note: 'Tegangan Efektif (RMS) dari V_max = 340 V',
+  },
+  {
+    label: 'atan(4/3) Sudut Fase',
+    expr: 'atan(4 ÷ 3)',
+    note: 'Sudut fase segitiga impedansi R=3, X=4 (Mode DEG)',
+    mode: 'DEG',
+  },
+  {
+    label: '0.1 + 0.2 (IEEE 754)',
+    expr: '0.1 + 0.2',
+    note: 'Uji Presisi Eksak Decimal.js (Bebas Drift)',
+  },
+  {
+    label: '5! + 2^8 + ln(e^3)',
+    expr: '5! + 2^8 + ln(e^3)',
+    note: 'Faktorial, Eksponensial & Logaritma Natural',
+  },
 ];
 
 export default function Tab1LearningAndCalc({
@@ -69,27 +87,84 @@ export default function Tab1LearningAndCalc({
   onClearArithmeticLogs,
   onLoadSampleToSimulator,
 }: Tab1LearningAndCalcProps) {
-  const [expression, setExpression] = useState<string>('0.1 + 0.2');
-  const [notes, setNotes] = useState<string>('Uji Presisi IEEE 754 (Decimal.js)');
+  const [expression, setExpression] = useState<string>(
+    '340 × sin(50π × 0.01 - 0.541)'
+  );
+  const [angleUnit, setAngleUnit] = useState<CalculatorAngleUnit>('RAD');
+  const [isSecondShift, setIsSecondShift] = useState<boolean>(false);
+  const [ansValue, setAnsValue] = useState<string>('0');
+  const [memoryValue, setMemoryValue] = useState<number>(0);
+  const [notes, setNotes] = useState<string>(
+    'Tegangan sesaat Soal P12 saat t = 10 ms (Mode RAD)'
+  );
+  const [copiedResult, setCopiedResult] = useState<boolean>(false);
 
-  const evaluation = useMemo(() => evaluateArithmetic(expression), [expression]);
+  const evaluation = useMemo(
+    () =>
+      evaluateArithmetic(expression, {
+        angleUnit,
+        ans: ansValue,
+      }),
+    [expression, angleUnit, ansValue]
+  );
 
-  const handleKeypadClick = (btn: (typeof KEYPAD_BUTTONS)[number]) => {
-    if (btn.action === 'clear') {
-      setExpression('');
-      return;
-    }
-    if (btn.action === 'backspace') {
-      setExpression((prev) => prev.slice(0, -1));
-      return;
-    }
-    if (btn.value) {
-      setExpression((prev) => prev + btn.value);
-    }
+  const appendToken = (token: string) => {
+    setExpression((prev) => prev + token);
+  };
+
+  const handleClear = () => {
+    setExpression('');
+  };
+
+  const handleBackspace = () => {
+    setExpression((prev) => {
+      const trimmed = prev;
+      // Remove full multi-char function call prefix if cursor is at the end of e.g. "asin(" or " mod "
+      const multiTokens = [
+        'asin(',
+        'acos(',
+        'atan(',
+        'sinh(',
+        'cosh(',
+        'tanh(',
+        'sqrt(',
+        'cbrt(',
+        'sin(',
+        'cos(',
+        'tan(',
+        'log(',
+        'exp(',
+        'abs(',
+        'rad(',
+        'deg(',
+        'ln(',
+        '√(',
+        '∛(',
+        ' mod ',
+        ' ÷ ',
+        ' × ',
+        ' - ',
+        ' + ',
+        'Ans',
+      ];
+      for (const tok of multiTokens) {
+        if (trimmed.endsWith(tok)) {
+          return trimmed.slice(0, -tok.length);
+        }
+      }
+      return trimmed.slice(0, -1);
+    });
+  };
+
+  const handleEvaluateEquals = () => {
+    if (!evaluation.isValid) return;
+    setAnsValue(evaluation.formattedResult);
   };
 
   const handleSaveCalculation = () => {
     if (!evaluation.isValid) return;
+
+    setAnsValue(evaluation.formattedResult);
 
     const entry: ArithmeticLogEntry = {
       id: `calc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -98,12 +173,39 @@ export default function Tab1LearningAndCalc({
         minute: '2-digit',
         second: '2-digit',
       }),
-      expression: expression.trim(),
+      expression: `[${angleUnit}] ${expression.trim()}`,
       result: evaluation.formattedResult,
-      notes: notes.trim() || 'Kalkulator Aritmatika Dasar',
+      notes: notes.trim() || `Kalkulator Ilmiah (${angleUnit})`,
     };
 
     onAddArithmeticLog(entry);
+  };
+
+  const handleCopyResult = async () => {
+    if (!evaluation.isValid) return;
+    try {
+      await navigator.clipboard.writeText(evaluation.formattedResult);
+      setCopiedResult(true);
+      setTimeout(() => setCopiedResult(false), 1600);
+    } catch {
+      // Ignore clipboard errors
+    }
+  };
+
+  // Memory register handlers
+  const handleMemoryClear = () => setMemoryValue(0);
+  const handleMemoryRecall = () => {
+    appendToken(memoryValue.toString());
+  };
+  const handleMemoryAdd = () => {
+    if (evaluation.isValid) {
+      setMemoryValue((prev) => prev + evaluation.numericValue);
+    }
+  };
+  const handleMemorySubtract = () => {
+    if (evaluation.isValid) {
+      setMemoryValue((prev) => prev - evaluation.numericValue);
+    }
   };
 
   const handleLoadSampleP12 = () => {
@@ -133,13 +235,13 @@ export default function Tab1LearningAndCalc({
       {/* Section Header */}
       <div className="space-y-1">
         <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
-          [01 · TUJUAN PEMBELAJARAN &amp; KALKULATOR PRESISI]
+          [01 · TUJUAN PEMBELAJARAN &amp; SCIENTIFIC CALCULATOR]
         </span>
         <h2 className="text-xl sm:text-2xl font-bold text-[#f4f4f5] tracking-[-0.02em] print:text-black">
-          1. Tujuan Pembelajaran, Referensi Rumus &amp; Kalkulator Aritmatika Dasar
+          1. Tujuan Pembelajaran, Referensi Rumus &amp; Modern Scientific Calculator
         </h2>
         <p className="text-sm text-[#c4c9cf] print:text-zinc-600">
-          Pelajari hubungan konversi satuan sudut, beda fase gelombang AC, serta uji perhitungan presisi tinggi sebelum memulai praktikum.
+          Pelajari hubungan konversi satuan sudut, beda fase gelombang AC, serta gunakan kalkulator ilmiah presisi tinggi (50-digit Decimal.js) untuk evaluasi trigonometri, logaritma, dan eksponensial.
         </p>
       </div>
 
@@ -160,8 +262,10 @@ export default function Tab1LearningAndCalc({
             </h3>
 
             <p className="text-xs text-[#c4c9cf] leading-relaxed print:text-zinc-700">
-              Hubungan dua arah (bidirectional) antara <strong className="text-[#f4f4f5]">Derajat Desimal (°)</strong>,{' '}
-              <strong className="text-[#f4f4f5]">Radian (rad &amp; kπ)</strong>, serta komponen seksagesimal{' '}
+              Hubungan dua arah (bidirectional) antara{' '}
+              <strong className="text-[#f4f4f5]">Derajat Desimal (°)</strong>,{' '}
+              <strong className="text-[#f4f4f5]">Radian (rad &amp; kπ)</strong>,
+              serta komponen seksagesimal{' '}
               <strong className="text-[#f4f4f5]">DMS (° &apos; &quot;)</strong>.
             </p>
 
@@ -207,7 +311,10 @@ export default function Tab1LearningAndCalc({
             </h3>
 
             <p className="text-xs text-[#c4c9cf] leading-relaxed print:text-zinc-700">
-              Analisis pergeseran sudut fase <strong className="text-[#f4f4f5]">φ (rad atau °)</strong> terhadap gelombang referensi untuk menentukan kondisi sefase, mendahului, atau tertinggal:
+              Analisis pergeseran sudut fase{' '}
+              <strong className="text-[#f4f4f5]">φ (rad atau °)</strong>{' '}
+              terhadap gelombang referensi untuk menentukan kondisi sefase,
+              mendahului, atau tertinggal:
             </p>
 
             <div className="space-y-2 pt-1 font-mono text-xs">
@@ -216,7 +323,9 @@ export default function Tab1LearningAndCalc({
                   <span className="text-[#9ca3af] block text-[10px] uppercase tracking-[0.06em]">
                     In Phase (Sefase, φ = 0)
                   </span>
-                  <span className="text-[#f4f4f5] font-semibold">y = A sin(ωt)</span>
+                  <span className="text-[#f4f4f5] font-semibold">
+                    y = A sin(ωt)
+                  </span>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#222227] text-[#c4c9cf] border border-white/[0.12] text-[10px]">
                   0°
@@ -228,7 +337,9 @@ export default function Tab1LearningAndCalc({
                   <span className="text-[#9ca3af] block text-[10px] uppercase tracking-[0.06em]">
                     Leading (Mendahului, +φ)
                   </span>
-                  <span className="text-[#35ff92] font-semibold">y = A sin(ωt + φ)</span>
+                  <span className="text-[#35ff92] font-semibold">
+                    y = A sin(ωt + φ)
+                  </span>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#35ff92]/15 text-[#35ff92] border border-[#35ff92]/30 text-[10px]">
                   LEAD (+)
@@ -240,7 +351,9 @@ export default function Tab1LearningAndCalc({
                   <span className="text-[#9ca3af] block text-[10px] uppercase tracking-[0.06em]">
                     Lagging (Tertinggal, -φ)
                   </span>
-                  <span className="text-[#6090ff] font-semibold">y = A sin(ωt - φ)</span>
+                  <span className="text-[#6090ff] font-semibold">
+                    y = A sin(ωt - φ)
+                  </span>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#2f6bff]/20 text-[#6090ff] border border-[#2f6bff]/40 text-[10px]">
                   LAG (-)
@@ -279,19 +392,25 @@ export default function Tab1LearningAndCalc({
                 <span className="text-[10px] uppercase tracking-[0.06em] text-[#9ca3af] block">
                   Periode
                 </span>
-                <span className="text-[#f4f4f5] font-semibold">T = 2π / ω (s)</span>
+                <span className="text-[#f4f4f5] font-semibold">
+                  T = 2π / ω (s)
+                </span>
               </div>
               <div className="p-2.5 rounded-xl bg-[#101013] border border-white/[0.12]">
                 <span className="text-[10px] uppercase tracking-[0.06em] text-[#9ca3af] block">
                   Frekuensi
                 </span>
-                <span className="text-[#f4f4f5] font-semibold">f = 1 / T (Hz)</span>
+                <span className="text-[#f4f4f5] font-semibold">
+                  f = 1 / T (Hz)
+                </span>
               </div>
               <div className="p-2.5 rounded-xl bg-[#101013] border border-white/[0.12]">
                 <span className="text-[10px] uppercase tracking-[0.06em] text-[#9ca3af] block">
                   Kec. Sudut
                 </span>
-                <span className="text-[#f4f4f5] font-semibold">ω = 2πf (rad/s)</span>
+                <span className="text-[#f4f4f5] font-semibold">
+                  ω = 2πf (rad/s)
+                </span>
               </div>
             </div>
 
@@ -301,7 +420,9 @@ export default function Tab1LearningAndCalc({
                 <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
                   [SOAL REFERENSI P12]
                 </span>
-                <span className="text-[11px] font-mono text-[#35ff92]">V_target = 200 V</span>
+                <span className="text-[11px] font-mono text-[#35ff92]">
+                  V_target = 200 V
+                </span>
               </div>
               <div className="font-mono text-sm font-bold text-[#f4f4f5] bg-[#18181c] px-3 py-2 rounded-lg border border-white/[0.12] text-center">
                 v(t) = 340 sin(50πt - 0.541) V
@@ -329,49 +450,79 @@ export default function Tab1LearningAndCalc({
         </div>
       </div>
 
-      {/* Basic Arithmetic Calculator Module */}
+      {/* ====================================================================
+          MODERN SCIENTIFIC CALCULATOR & LOG TABLE
+         ==================================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Calculator Card */}
-        <div className="lg:col-span-5 cafe-card rounded-2xl p-6 space-y-5">
-          <div className="flex items-center justify-between border-b border-white/[0.12] pb-4">
+        {/* Scientific Calculator Console (6 cols) */}
+        <div className="lg:col-span-6 cafe-card rounded-2xl p-5 sm:p-6 space-y-4">
+          {/* Top Console Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.12] pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-[#222227] border border-white/[0.14] text-[#f4f4f5]">
+              <div className="p-2.5 rounded-xl bg-[#222227] border border-white/[0.16] text-[#35ff92]">
                 <Calculator className="w-4 h-4" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-[#f4f4f5] tracking-[-0.015em] print:text-black">
-                  Basic Arithmetic Calculator
+                  Modern Scientific Calculator
                 </h3>
-                <p className="text-xs text-[#9ca3af] font-mono">
-                  Decimal.js · 50-Digit Exact
+                <p className="text-[11px] text-[#9ca3af] font-mono">
+                  Decimal.js 50-Digit · Trig, Log, Exp &amp; Factorial
                 </p>
               </div>
             </div>
-            <span className="px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-[0.06em] rounded-full bg-[#222227] text-[#35ff92] border border-white/[0.14]">
-              [NO DRIFT]
-            </span>
+
+            {/* Angle Unit Pill Switcher (DEG / RAD) */}
+            <div className="flex items-center gap-2">
+              <div
+                className="inline-flex rounded-full bg-[#101013] p-0.5 border border-white/[0.16]"
+                role="group"
+                aria-label="Mode Satuan Sudut Kalkulator"
+              >
+                <button
+                  type="button"
+                  onClick={() => setAngleUnit('DEG')}
+                  className={`px-3 py-1 text-[11px] font-mono rounded-full transition-all cursor-pointer ${
+                    angleUnit === 'DEG'
+                      ? 'bg-[#35ff92] text-[#171515] font-bold shadow'
+                      : 'text-[#9ca3af] hover:text-[#f4f4f5]'
+                  }`}
+                >
+                  DEG (°)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAngleUnit('RAD')}
+                  className={`px-3 py-1 text-[11px] font-mono rounded-full transition-all cursor-pointer ${
+                    angleUnit === 'RAD'
+                      ? 'bg-[#2f6bff] text-white font-bold shadow'
+                      : 'text-[#9ca3af] hover:text-[#f4f4f5]'
+                  }`}
+                >
+                  RAD (π)
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Quick Preset Expressions */}
+          {/* Quick Engineering & Scientific Presets */}
           <div className="space-y-1.5">
             <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] block">
-              Preset Uji Presisi Cepat
+              Preset Uji Ilmiah &amp; Praktikum M12
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {[
-                { label: '0.1 + 0.2', expr: '0.1 + 0.2', note: 'Uji Bebas Drift IEEE 754' },
-                { label: '180 / π', expr: '180 / π', note: 'Nilai 1 Radian dalam Derajat' },
-                { label: '50.145 × (π / 180)', expr: '50.145 * (π / 180)', note: 'Konversi 50.145° ke Radian' },
-                { label: '45 + 55/60 + 7.92/3600', expr: '45 + 55/60 + 7.92/3600', note: 'DMS ke Derajat Desimal' },
-              ].map((preset) => (
+              {SCIENTIFIC_PRESETS.map((preset) => (
                 <button
                   key={preset.label}
                   type="button"
                   onClick={() => {
                     setExpression(preset.expr);
                     setNotes(preset.note);
+                    if (preset.mode) {
+                      setAngleUnit(preset.mode);
+                    }
                   }}
-                  className="px-3 py-1 rounded-full text-xs font-mono bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-full text-[11px] font-mono bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
                 >
                   {preset.label}
                 </button>
@@ -379,90 +530,455 @@ export default function Tab1LearningAndCalc({
             </div>
           </div>
 
-          {/* Expression Display & Input */}
-          <div className="space-y-3">
+          {/* Multi-Line Scientific Display Screen */}
+          <div className="p-4 rounded-2xl bg-[#0b0b0e] border border-white/[0.18] shadow-inner space-y-3">
+            {/* Status Telemetry Row inside LCD */}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-2 py-0.5 rounded font-bold ${
+                    angleUnit === 'DEG'
+                      ? 'bg-[#35ff92]/15 text-[#35ff92] border border-[#35ff92]/30'
+                      : 'bg-[#2f6bff]/20 text-[#6090ff] border border-[#2f6bff]/40'
+                  }`}
+                >
+                  MODE: {angleUnit}
+                </span>
+                {isSecondShift && (
+                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                    2ND INV
+                  </span>
+                )}
+                {memoryValue !== 0 && (
+                  <span className="px-2 py-0.5 rounded bg-white/[0.08] text-[#f4f4f5]">
+                    M = {Number(memoryValue.toFixed(6))}
+                  </span>
+                )}
+              </div>
+              <span className="text-[#9ca3af] tabular-nums">
+                ANS = <strong className="text-[#f4f4f5]">{ansValue}</strong>
+              </span>
+            </div>
+
+            {/* Editable Expression Input */}
             <div>
-              <label
-                htmlFor="calc-expression-input"
-                className="block text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] mb-1.5"
-              >
-                Ekspresi (+, -, ×, ÷, tanda kurung, π)
+              <label htmlFor="calc-expression-input" className="sr-only">
+                Ekspresi Kalkulator Ilmiah
               </label>
               <input
                 id="calc-expression-input"
                 type="text"
                 value={expression}
                 onChange={(e) => setExpression(e.target.value)}
-                placeholder="(0.1 + 0.2) × π"
-                className="cafe-input w-full px-3.5 py-2.5 text-base font-mono rounded-xl placeholder-[#9ca3af]/40"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleEvaluateEquals();
+                  }
+                }}
+                placeholder="Masukkan ekspresi ilmiah, misal: 340 × sin(50π × 0.01 - 0.541)"
+                className="w-full bg-transparent text-[#f4f4f5] font-mono text-sm sm:text-base focus:outline-none placeholder-[#9ca3af]/40"
               />
             </div>
 
-            {/* Evaluated Output Box */}
-            <div className="p-4 rounded-xl bg-[#101013] border border-white/[0.14] flex items-center justify-between">
-              <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
-                HASIL (=)
-              </span>
-              {evaluation.isValid ? (
-                <span
-                  data-testid="calc-result-display"
-                  className="text-lg sm:text-xl font-mono tabular-nums font-bold text-[#35ff92] break-all text-right"
-                >
-                  {evaluation.formattedResult}
+            {/* Primary & Secondary Scientific Readout */}
+            <div className="pt-2 border-t border-white/[0.08] flex items-end justify-between gap-3">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] block">
+                  HASIL PRESISI (=)
                 </span>
+                {evaluation.isValid && evaluation.scientificNotation && (
+                  <span className="text-[11px] font-mono tabular-nums text-[#9ca3af] block">
+                    Sci: {evaluation.scientificNotation}
+                  </span>
+                )}
+              </div>
+
+              {evaluation.isValid ? (
+                <div className="flex items-center gap-2">
+                  <span
+                    data-testid="calc-result-display"
+                    className="text-xl sm:text-2xl font-mono tabular-nums font-bold text-[#35ff92] break-all text-right"
+                  >
+                    {evaluation.formattedResult}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyResult}
+                    title="Salin hasil"
+                    className="p-1.5 rounded-lg bg-[#18181c] hover:bg-[#222227] text-[#9ca3af] hover:text-[#f4f4f5] border border-white/[0.12] transition-colors cursor-pointer"
+                  >
+                    {copiedResult ? (
+                      <Check className="w-3.5 h-3.5 text-[#35ff92]" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
               ) : (
                 <span className="text-xs font-mono text-red-400 text-right">
                   {evaluation.error || 'Ekspresi belum lengkap'}
                 </span>
               )}
             </div>
+          </div>
 
-            {/* Optional Note Input */}
+          {/* Memory Register Bar (MC, MR, M+, M-, Ans) */}
+          <div className="grid grid-cols-5 gap-1.5 print:hidden">
+            <button
+              type="button"
+              onClick={handleMemoryClear}
+              disabled={memoryValue === 0}
+              className="py-1.5 rounded-xl font-mono text-xs bg-[#101013] hover:bg-[#222227] text-[#9ca3af] hover:text-[#f4f4f5] border border-white/[0.1] disabled:opacity-40 transition-all cursor-pointer"
+            >
+              MC
+            </button>
+            <button
+              type="button"
+              onClick={handleMemoryRecall}
+              className="py-1.5 rounded-xl font-mono text-xs bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.1] transition-all cursor-pointer"
+            >
+              MR
+            </button>
+            <button
+              type="button"
+              onClick={handleMemoryAdd}
+              className="py-1.5 rounded-xl font-mono text-xs bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-[#35ff92] border border-white/[0.1] transition-all cursor-pointer"
+            >
+              M+
+            </button>
+            <button
+              type="button"
+              onClick={handleMemorySubtract}
+              className="py-1.5 rounded-xl font-mono text-xs bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-red-300 border border-white/[0.1] transition-all cursor-pointer"
+            >
+              M-
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken('Ans')}
+              className="py-1.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#35ff92] border border-white/[0.14] transition-all cursor-pointer"
+            >
+              Ans
+            </button>
+          </div>
+
+          {/* 5-Column Modern Scientific Keypad */}
+          <div className="grid grid-cols-5 gap-2 pt-0.5 print:hidden">
+            {/* Row 1: 2nd, sin/asin, cos/acos, tan/atan, sinh/cosh */}
+            <button
+              type="button"
+              onClick={() => setIsSecondShift((v) => !v)}
+              className={`py-2.5 rounded-xl font-mono text-xs font-bold border transition-all active:scale-95 cursor-pointer ${
+                isSecondShift
+                  ? 'bg-amber-400 text-[#171515] border-amber-300 shadow'
+                  : 'bg-[#222227] text-amber-300 border-white/[0.16] hover:bg-[#2c2c33]'
+              }`}
+            >
+              2nd
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(isSecondShift ? 'asin(' : 'sin(')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              {isSecondShift ? 'sin⁻¹' : 'sin'}
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(isSecondShift ? 'acos(' : 'cos(')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              {isSecondShift ? 'cos⁻¹' : 'cos'}
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(isSecondShift ? 'atan(' : 'tan(')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              {isSecondShift ? 'tan⁻¹' : 'tan'}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setAngleUnit((prev) => (prev === 'DEG' ? 'RAD' : 'DEG'))
+              }
+              className="py-2.5 rounded-xl font-mono text-xs font-bold bg-[#18181c] hover:bg-[#222227] text-[#35ff92] border border-[#35ff92]/30 transition-all active:scale-95 cursor-pointer"
+            >
+              {angleUnit}
+            </button>
+
+            {/* Row 2: ln/exp, log/10^x, x²/x³, x^y, √/∛ */}
+            <button
+              type="button"
+              onClick={() => appendToken(isSecondShift ? 'exp(' : 'ln(')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              {isSecondShift ? 'eˣ' : 'ln'}
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(isSecondShift ? '10^(' : 'log(')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              {isSecondShift ? '10ˣ' : 'log'}
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(isSecondShift ? '³' : '²')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              {isSecondShift ? 'x³' : 'x²'}
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken('^')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              xʸ
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(isSecondShift ? '∛(' : '√(')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              {isSecondShift ? '∛x' : '√x'}
+            </button>
+
+            {/* Row 3: π, e, n!, 1/x, |x| */}
+            <button
+              type="button"
+              onClick={() => appendToken('π')}
+              className="py-2.5 rounded-xl font-mono text-xs font-bold bg-[#222227] hover:bg-[#2c2c33] text-[#35ff92] border border-white/[0.16] transition-all active:scale-95 cursor-pointer"
+            >
+              π
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken('e')}
+              className="py-2.5 rounded-xl font-mono text-xs font-bold bg-[#222227] hover:bg-[#2c2c33] text-[#35ff92] border border-white/[0.16] transition-all active:scale-95 cursor-pointer"
+            >
+              e
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken('!')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              n!
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken('^(-1)')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              1/x
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken('abs(')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              |x|
+            </button>
+
+            {/* Row 4: (, ), rad/deg, C, ⌫ */}
+            <button
+              type="button"
+              onClick={() => appendToken('(')}
+              className="py-2.5 rounded-xl font-mono text-sm bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              (
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(')')}
+              className="py-2.5 rounded-xl font-mono text-sm bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              )
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(isSecondShift ? 'deg(' : 'rad(')}
+              title="Konversi derajat ke radian rad(x) atau radian ke derajat deg(x)"
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              {isSecondShift ? 'deg(' : 'rad('}
+            </button>
+            <button
+              type="button"
+              onClick={handleClear}
+              className="py-2.5 rounded-xl font-mono text-xs font-bold bg-[#2a1a1d] hover:bg-red-950/70 text-red-300 border border-red-500/30 transition-all active:scale-95 cursor-pointer"
+            >
+              AC
+            </button>
+            <button
+              type="button"
+              onClick={handleBackspace}
+              className="py-2.5 rounded-xl font-mono text-sm bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              ⌫
+            </button>
+
+            {/* Row 5: 7, 8, 9, ÷, mod */}
+            {['7', '8', '9'].map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => appendToken(d)}
+                className="py-2.5 rounded-xl font-mono text-sm font-semibold bg-[#101013] hover:bg-[#222227] text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+              >
+                {d}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => appendToken(' ÷ ')}
+              className="py-2.5 rounded-xl font-mono text-sm font-bold bg-[#222227] hover:bg-[#2c2c33] text-[#6090ff] border border-white/[0.16] transition-all active:scale-95 cursor-pointer"
+            >
+              ÷
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(' mod ')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              mod
+            </button>
+
+            {/* Row 6: 4, 5, 6, ×, % */}
+            {['4', '5', '6'].map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => appendToken(d)}
+                className="py-2.5 rounded-xl font-mono text-sm font-semibold bg-[#101013] hover:bg-[#222227] text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+              >
+                {d}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => appendToken(' × ')}
+              className="py-2.5 rounded-xl font-mono text-sm font-bold bg-[#222227] hover:bg-[#2c2c33] text-[#6090ff] border border-white/[0.16] transition-all active:scale-95 cursor-pointer"
+            >
+              ×
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken('%')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              %
+            </button>
+
+            {/* Row 7: 1, 2, 3, -, ± */}
+            {['1', '2', '3'].map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => appendToken(d)}
+                className="py-2.5 rounded-xl font-mono text-sm font-semibold bg-[#101013] hover:bg-[#222227] text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+              >
+                {d}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => appendToken(' - ')}
+              className="py-2.5 rounded-xl font-mono text-sm font-bold bg-[#222227] hover:bg-[#2c2c33] text-[#6090ff] border border-white/[0.16] transition-all active:scale-95 cursor-pointer"
+            >
+              -
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setExpression((prev) =>
+                  prev.startsWith('-(') && prev.endsWith(')')
+                    ? prev.slice(2, -1)
+                    : prev
+                    ? `-(${prev})`
+                    : '-'
+                )
+              }
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              ±
+            </button>
+
+            {/* Row 8: 0, ., EXP (×10^), +, = */}
+            <button
+              type="button"
+              onClick={() => appendToken('0')}
+              className="py-2.5 rounded-xl font-mono text-sm font-semibold bg-[#101013] hover:bg-[#222227] text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              0
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken('.')}
+              className="py-2.5 rounded-xl font-mono text-sm font-bold bg-[#101013] hover:bg-[#222227] text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              .
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(' × 10^')}
+              className="py-2.5 rounded-xl font-mono text-xs font-semibold bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-all active:scale-95 cursor-pointer"
+            >
+              ×10ˣ
+            </button>
+            <button
+              type="button"
+              onClick={() => appendToken(' + ')}
+              className="py-2.5 rounded-xl font-mono text-sm font-bold bg-[#222227] hover:bg-[#2c2c33] text-[#6090ff] border border-white/[0.16] transition-all active:scale-95 cursor-pointer"
+            >
+              +
+            </button>
+            <button
+              type="button"
+              onClick={handleEvaluateEquals}
+              disabled={!evaluation.isValid}
+              title="Evaluasi & simpan ke Ans"
+              className="py-2.5 rounded-xl font-mono text-sm font-bold bg-[#35ff92] hover:bg-[#4bff9f] text-[#171515] border border-[#35ff92] disabled:opacity-40 transition-all active:scale-95 cursor-pointer shadow"
+            >
+              =
+            </button>
+          </div>
+
+          {/* Note Input & Save to Log Button */}
+          <div className="space-y-3 pt-2 border-t border-white/[0.12]">
             <div>
               <label
                 htmlFor="calc-note-input"
                 className="block text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] mb-1.5"
               >
-                Catatan Perhitungan
+                Catatan Perhitungan Ilmiah
               </label>
               <input
                 id="calc-note-input"
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Menghitung nilai radian"
+                placeholder="Misal: Tegangan sesaat saat t = 10 ms"
                 className="cafe-input w-full px-3.5 py-2 text-xs rounded-xl placeholder-[#9ca3af]/40"
               />
             </div>
-          </div>
 
-          {/* Interactive Keypad */}
-          <div className="grid grid-cols-4 gap-2 pt-1 print:hidden">
-            {KEYPAD_BUTTONS.map((btn) => (
-              <button
-                key={btn.label}
-                type="button"
-                onClick={() => handleKeypadClick(btn)}
-                className={`py-2.5 rounded-xl font-mono text-sm border transition-all active:scale-95 cursor-pointer ${btn.style}`}
-              >
-                {btn.label}
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={handleSaveCalculation}
+              disabled={!evaluation.isValid}
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-xs sm:text-sm font-semibold bg-[#f4f4f5] hover:bg-white text-[#171515] disabled:opacity-40 transition-all active:scale-95 cursor-pointer print:hidden"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Simpan Perhitungan ke Log Praktikum</span>
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={handleSaveCalculation}
-            disabled={!evaluation.isValid}
-            className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-xs sm:text-sm font-semibold bg-[#f4f4f5] hover:bg-white text-[#171515] disabled:opacity-40 transition-all active:scale-95 cursor-pointer print:hidden"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Simpan Perhitungan ke Log Praktikum</span>
-          </button>
         </div>
 
-        {/* Arithmetic Log & Unified Persistence Toolbar */}
-        <div className="lg:col-span-7 space-y-4">
+        {/* Scientific Calculator Log & Unified Persistence Toolbar (6 cols) */}
+        <div className="lg:col-span-6 space-y-4">
           <PersistenceToolbar
             student={student}
             angleLogs={angleLogs}
@@ -477,7 +993,7 @@ export default function Tab1LearningAndCalc({
           <div className="cafe-card rounded-2xl overflow-hidden">
             <div className="px-5 py-4 border-b border-white/[0.12] flex items-center justify-between">
               <span className="text-xs font-mono uppercase tracking-[0.08em] text-[#f4f4f5]">
-                [LOG PERHITUNGAN KALKULATOR DASAR]
+                [LOG PERHITUNGAN SCIENTIFIC CALCULATOR]
               </span>
               <span className="text-xs font-mono tabular-nums text-[#9ca3af]">
                 {arithmeticLogs.length} BARIS
@@ -490,7 +1006,7 @@ export default function Tab1LearningAndCalc({
                   <tr className="bg-[#101013] text-[#9ca3af] font-mono text-[11px] uppercase tracking-[0.06em] border-b border-white/[0.12]">
                     <th className="py-3 px-4 w-12 text-center">No</th>
                     <th className="py-3 px-4">Waktu</th>
-                    <th className="py-3 px-4">Ekspresi</th>
+                    <th className="py-3 px-4">Ekspresi Ilmiah</th>
                     <th className="py-3 px-4">Hasil Presisi</th>
                     <th className="py-3 px-4">Catatan</th>
                     <th className="py-3 px-4 text-center print:hidden">Aksi</th>
@@ -503,7 +1019,7 @@ export default function Tab1LearningAndCalc({
                         colSpan={6}
                         className="py-10 px-4 text-center text-[#9ca3af] font-mono text-xs"
                       >
-                        Belum ada riwayat perhitungan disimpan. Masukkan ekspresi dan klik &quot;Save Hasil Kalkulator&quot;.
+                        Belum ada riwayat perhitungan disimpan. Masukkan ekspresi ilmiah dan klik &quot;Save Hasil Kalkulator&quot;.
                       </td>
                     </tr>
                   ) : (
