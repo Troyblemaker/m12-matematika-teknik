@@ -190,7 +190,9 @@ export default function HeaderIdentityBar({
                 <User className="w-3.5 h-3.5 text-[#9ca3af] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="student-nama"
+                  name="student-nama"
                   type="text"
+                  autoComplete="name"
                   value={student.nama}
                   onChange={(e) =>
                     onUpdateStudent({ ...student, nama: e.target.value })
@@ -249,14 +251,23 @@ export default function HeaderIdentityBar({
           </div>
         </div>
 
-        {/* Navigation Pill Tabs — Compact 3-Column Horizontal Bar on Mobile & Desktop */}
-        <nav
+        {/* Navigation Pill Tabs — WAI-ARIA 1.2 Tablist Pattern */}
+        <div
+          role="tablist"
           aria-label="Navigasi Modul Praktikum"
           className="grid grid-cols-3 gap-1.5 sm:gap-2.5 print:hidden"
         >
           <button
+            id="tab-tujuan"
+            role="tab"
             type="button"
+            aria-selected={activeTab === 'tujuan'}
+            aria-controls="panel-tujuan"
             onClick={() => onSelectTab('tujuan')}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight') onSelectTab('konversi');
+              if (e.key === 'ArrowLeft') onSelectTab('sinusoidal');
+            }}
             className={`flex items-center justify-center sm:justify-between px-2.5 sm:px-5 py-2.5 rounded-xl sm:rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer border min-h-[42px] ${
               activeTab === 'tujuan'
                 ? 'bg-[#f4f4f5] text-[#171515] border-[#f4f4f5] font-semibold shadow-lg'
@@ -264,7 +275,7 @@ export default function HeaderIdentityBar({
             }`}
           >
             <span className="flex items-center gap-1.5 sm:gap-2 truncate">
-              <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" aria-hidden="true" />
               <span className="sm:hidden truncate">1. Tujuan</span>
               <span className="hidden sm:inline truncate">1. Tujuan Pembelajaran</span>
             </span>
@@ -282,8 +293,16 @@ export default function HeaderIdentityBar({
           </button>
 
           <button
+            id="tab-konversi"
+            role="tab"
             type="button"
+            aria-selected={activeTab === 'konversi'}
+            aria-controls="panel-konversi"
             onClick={() => onSelectTab('konversi')}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight') onSelectTab('sinusoidal');
+              if (e.key === 'ArrowLeft') onSelectTab('tujuan');
+            }}
             className={`flex items-center justify-center sm:justify-between px-2.5 sm:px-5 py-2.5 rounded-xl sm:rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer border min-h-[42px] ${
               activeTab === 'konversi'
                 ? 'bg-[#f4f4f5] text-[#171515] border-[#f4f4f5] font-semibold shadow-lg'
@@ -291,7 +310,7 @@ export default function HeaderIdentityBar({
             }`}
           >
             <span className="flex items-center gap-1.5 sm:gap-2 truncate">
-              <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" aria-hidden="true" />
               <span className="sm:hidden truncate">2. Sudut</span>
               <span className="hidden sm:inline truncate">2. Konversi Sudut</span>
             </span>
@@ -307,8 +326,16 @@ export default function HeaderIdentityBar({
           </button>
 
           <button
+            id="tab-sinusoidal"
+            role="tab"
             type="button"
+            aria-selected={activeTab === 'sinusoidal'}
+            aria-controls="panel-sinusoidal"
             onClick={() => onSelectTab('sinusoidal')}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight') onSelectTab('tujuan');
+              if (e.key === 'ArrowLeft') onSelectTab('konversi');
+            }}
             className={`flex items-center justify-center sm:justify-between px-2.5 sm:px-5 py-2.5 rounded-xl sm:rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer border min-h-[42px] ${
               activeTab === 'sinusoidal'
                 ? 'bg-[#f4f4f5] text-[#171515] border-[#f4f4f5] font-semibold shadow-lg'
@@ -316,7 +343,7 @@ export default function HeaderIdentityBar({
             }`}
           >
             <span className="flex items-center gap-1.5 sm:gap-2 truncate">
-              <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" aria-hidden="true" />
               <span className="sm:hidden truncate">3. Sinus</span>
               <span className="hidden sm:inline truncate">3. Sinusoidal Form</span>
             </span>
@@ -332,7 +359,7 @@ export default function HeaderIdentityBar({
               </span>
             )}
           </button>
-        </nav>
+        </div>
       </div>
     </header>
   );

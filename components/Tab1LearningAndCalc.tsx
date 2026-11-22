@@ -481,6 +481,7 @@ export default function Tab1LearningAndCalc({
               >
                 <button
                   type="button"
+                  aria-pressed={angleUnit === 'DEG'}
                   onClick={() => setAngleUnit('DEG')}
                   className={`px-3 py-1 text-[11px] font-mono rounded-full transition-all cursor-pointer ${
                     angleUnit === 'DEG'
@@ -492,6 +493,7 @@ export default function Tab1LearningAndCalc({
                 </button>
                 <button
                   type="button"
+                  aria-pressed={angleUnit === 'RAD'}
                   onClick={() => setAngleUnit('RAD')}
                   className={`px-3 py-1 text-[11px] font-mono rounded-full transition-all cursor-pointer ${
                     angleUnit === 'RAD'
@@ -582,7 +584,12 @@ export default function Tab1LearningAndCalc({
             </div>
 
             {/* Primary & Secondary Scientific Readout */}
-            <div className="pt-2 border-t border-white/[0.08] flex items-end justify-between gap-3">
+            <div
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              className="pt-2 border-t border-white/[0.08] flex items-end justify-between gap-3"
+            >
               <div className="space-y-0.5">
                 <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] block">
                   HASIL PRESISI (=)
@@ -668,6 +675,7 @@ export default function Tab1LearningAndCalc({
             {/* Row 1: 2nd, sin/asin, cos/acos, tan/atan, sinh/cosh */}
             <button
               type="button"
+              aria-pressed={isSecondShift}
               onClick={() => setIsSecondShift((v) => !v)}
               className={`py-2.5 rounded-xl font-mono text-xs font-bold border transition-all active:scale-95 cursor-pointer ${
                 isSecondShift
@@ -1002,14 +1010,17 @@ export default function Tab1LearningAndCalc({
 
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                <caption className="sr-only">
+                  Tabel Log Perhitungan Scientific Calculator
+                </caption>
                 <thead>
                   <tr className="bg-[#101013] text-[#9ca3af] font-mono text-[11px] uppercase tracking-[0.06em] border-b border-white/[0.12]">
-                    <th className="py-3 px-4 w-12 text-center">No</th>
-                    <th className="py-3 px-4">Waktu</th>
-                    <th className="py-3 px-4">Ekspresi Ilmiah</th>
-                    <th className="py-3 px-4">Hasil Presisi</th>
-                    <th className="py-3 px-4">Catatan</th>
-                    <th className="py-3 px-4 text-center print:hidden">Aksi</th>
+                    <th scope="col" className="py-3 px-4 w-12 text-center">No</th>
+                    <th scope="col" className="py-3 px-4">Waktu</th>
+                    <th scope="col" className="py-3 px-4">Ekspresi Ilmiah</th>
+                    <th scope="col" className="py-3 px-4">Hasil Presisi</th>
+                    <th scope="col" className="py-3 px-4">Catatan</th>
+                    <th scope="col" className="py-3 px-4 text-center print:hidden">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.08]">

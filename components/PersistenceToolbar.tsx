@@ -121,7 +121,11 @@ export default function PersistenceToolbar({
 
       {/* Error Banner */}
       {localError && (
-        <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-[#18181c] border border-red-500/40 text-[#f4f4f5] text-xs sm:text-sm">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-[#18181c] border border-red-500/40 text-[#f4f4f5] text-xs sm:text-sm"
+        >
           <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           <div className="flex-1 text-[#c4c9cf]">{localError}</div>
           <button

@@ -27,6 +27,13 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+}
+
+/* WCAG 2.2 AA Keyboard Focus-Visible Standard */
+:focus-visible {
+  outline: 2px solid #35ff92;
+  outline-offset: 2px;
 }
 
 /* Custom touch-friendly range slider for mobile oscilloscope scrubbing */
@@ -67,6 +74,18 @@ input[type="range"] {
   background-color: #121216;
   border-color: #f4f4f5;
   box-shadow: 0 0 0 2px rgba(244, 244, 245, 0.18);
+}
+
+/* WCAG 2.3.3 Reduced Motion Preference Compliance */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Dedicated A4 Single-Page Compact Print Layout */

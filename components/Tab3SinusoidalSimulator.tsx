@@ -435,6 +435,7 @@ export default function Tab3SinusoidalSimulator({
             {/* Toggle Reference Wave */}
             <button
               type="button"
+              aria-pressed={showRefWave}
               onClick={() => setShowRefWave((v) => !v)}
               className={`px-3 py-1.5 rounded-full text-[11px] font-mono border transition-colors cursor-pointer print:hidden ${
                 showRefWave
@@ -448,6 +449,7 @@ export default function Tab3SinusoidalSimulator({
             {/* Toggle Key Markers */}
             <button
               type="button"
+              aria-pressed={showKeyMarkers}
               onClick={() => setShowKeyMarkers((v) => !v)}
               className={`px-3 py-1.5 rounded-full text-[11px] font-mono border transition-colors cursor-pointer print:hidden ${
                 showKeyMarkers
@@ -547,14 +549,34 @@ export default function Tab3SinusoidalSimulator({
               <svg
                 ref={svgRef}
                 viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                tabIndex={0}
                 onMouseMove={handleSvgMouseMove}
                 onMouseLeave={handleSvgMouseLeave}
                 onClick={handleSvgClick}
                 onTouchStart={handleSvgTouchMove}
                 onTouchMove={handleSvgTouchMove}
-                className="w-full h-auto cursor-crosshair select-none touch-pan-y"
+                onKeyDown={(e) => {
+                  const step = maxTimeMs / 100;
+                  const curr = activeTimeMs ?? 0;
+                  if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    pinTimeAndSyncInput(Math.min(maxTimeMs, curr + step));
+                  } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    pinTimeAndSyncInput(Math.max(0, curr - step));
+                  } else if (e.key === 'Home') {
+                    e.preventDefault();
+                    pinTimeAndSyncInput(0);
+                  } else if (e.key === 'End') {
+                    e.preventDefault();
+                    pinTimeAndSyncInput(maxTimeMs);
+                  } else if (e.key === 'Escape') {
+                    setPinnedTimeMs(null);
+                  }
+                }}
+                className="w-full h-auto cursor-crosshair select-none touch-pan-y rounded-xl"
                 role="img"
-                aria-label="Grafik Osiloskop Interaktif Gelombang Sinusoidal 1.25 Siklus"
+                aria-label="Grafik Osiloskop Interaktif Gelombang Sinusoidal 1.25 Siklus. Gunakan tombol panah Kiri/Kanan untuk menggeser waktu kursor t."
               >
                 <defs>
                   <linearGradient id="waveAreaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1429,9 +1451,10 @@ export default function Tab3SinusoidalSimulator({
             </div>
 
             {/* (b) v saat t = 0 */}
-            <div
+            <button
+              type="button"
               onClick={() => pinTimeAndSyncInput(0)}
-              className="p-4 rounded-xl bg-[#101013] hover:bg-[#141418] border border-white/[0.12] hover:border-white/[0.24] transition-colors cursor-pointer space-y-1"
+              className="text-left p-4 rounded-xl bg-[#101013] hover:bg-[#141418] border border-white/[0.12] hover:border-white/[0.24] transition-colors cursor-pointer space-y-1"
             >
               <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-[#9ca3af]">
                 (b) Tegangan v saat t = 0 s
@@ -1445,12 +1468,13 @@ export default function Tab3SinusoidalSimulator({
               >
                 {analysis.vAtZero.toFixed(2)} V
               </div>
-            </div>
+            </button>
 
             {/* (c) v saat t = 10 ms */}
-            <div
+            <button
+              type="button"
               onClick={() => pinTimeAndSyncInput(10)}
-              className="p-4 rounded-xl bg-[#101013] hover:bg-[#141418] border border-white/[0.12] hover:border-white/[0.24] transition-colors cursor-pointer space-y-1"
+              className="text-left p-4 rounded-xl bg-[#101013] hover:bg-[#141418] border border-white/[0.12] hover:border-white/[0.24] transition-colors cursor-pointer space-y-1"
             >
               <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-[#9ca3af]">
                 (c) Tegangan v saat t = 10 ms (0.01 s)
@@ -1464,16 +1488,17 @@ export default function Tab3SinusoidalSimulator({
               >
                 {analysis.vAt10ms.toFixed(2)} V
               </div>
-            </div>
+            </button>
 
             {/* (d) t saat v = V_target pertama (t >= 0) */}
-            <div
+            <button
+              type="button"
               onClick={() => {
                 if (analysis.tAtTargetMs !== null) {
                   pinTimeAndSyncInput(analysis.tAtTargetMs);
                 }
               }}
-              className="p-4 rounded-xl bg-[#101013] hover:bg-[#141418] border border-white/[0.12] hover:border-white/[0.24] transition-colors cursor-pointer space-y-1"
+              className="text-left p-4 rounded-xl bg-[#101013] hover:bg-[#141418] border border-white/[0.12] hover:border-white/[0.24] transition-colors cursor-pointer space-y-1"
             >
               <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-[#9ca3af]">
                 (d) Waktu t pertama saat v = {analysis.vTarget} V (t ≥ 0)
@@ -1493,12 +1518,13 @@ export default function Tab3SinusoidalSimulator({
               >
                 {analysis.tAtTargetFormatted}
               </div>
-            </div>
+            </button>
 
             {/* (e) t saat v Maksimum pertama (t >= 0) */}
-            <div
+            <button
+              type="button"
               onClick={() => pinTimeAndSyncInput(analysis.tAtMaxMs)}
-              className="p-4 rounded-xl bg-[#101013] hover:bg-[#141418] border border-white/[0.12] hover:border-white/[0.24] transition-colors cursor-pointer space-y-1"
+              className="text-left p-4 rounded-xl bg-[#101013] hover:bg-[#141418] border border-white/[0.12] hover:border-white/[0.24] transition-colors cursor-pointer space-y-1"
             >
               <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-[#9ca3af]">
                 (e) Waktu t pertama saat v Maksimum (+{analysis.amplitude} V)
@@ -1512,7 +1538,7 @@ export default function Tab3SinusoidalSimulator({
               >
                 {analysis.tAtMaxFormatted}
               </div>
-            </div>
+            </button>
 
             {/* (f) Detailed Custom Time Step-by-Step Result Card */}
             {customTimeEval.isValid && customTimeEval.probe && (
@@ -1575,15 +1601,18 @@ export default function Tab3SinusoidalSimulator({
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <caption className="sr-only">
+                Tabel Log Simulasi Gelombang Sinusoidal AC
+              </caption>
               <thead>
                 <tr className="bg-[#101013] text-[#9ca3af] font-mono text-[11px] uppercase tracking-[0.06em] border-b border-white/[0.12]">
-                  <th className="py-3 px-4 text-center w-12">No</th>
-                  <th className="py-3 px-4">A (V)</th>
-                  <th className="py-3 px-4">ω (rad/s)</th>
-                  <th className="py-3 px-4">φ (rad/°)</th>
-                  <th className="py-3 px-4">Persamaan v(t)/i(t)</th>
-                  <th className="py-3 px-4">Jenis Fase</th>
-                  <th className="py-3 px-4 text-center print:hidden">Aksi</th>
+                  <th scope="col" className="py-3 px-4 text-center w-12">No</th>
+                  <th scope="col" className="py-3 px-4">A (V)</th>
+                  <th scope="col" className="py-3 px-4">ω (rad/s)</th>
+                  <th scope="col" className="py-3 px-4">φ (rad/°)</th>
+                  <th scope="col" className="py-3 px-4">Persamaan v(t)/i(t)</th>
+                  <th scope="col" className="py-3 px-4">Jenis Fase</th>
+                  <th scope="col" className="py-3 px-4 text-center print:hidden">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.08]">

@@ -301,6 +301,7 @@ export default function Tab2AngleConverter({
                 <input
                   id="mode-a-input"
                   type="text"
+                  inputMode="decimal"
                   value={modeAInput}
                   onChange={(e) => {
                     setModeAInput(e.target.value);
@@ -643,21 +644,24 @@ export default function Tab2AngleConverter({
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs sm:text-sm">
-              <thead>
-                <tr className="bg-[#101013] text-[#9ca3af] font-mono text-[11px] uppercase tracking-[0.06em] border-b border-white/[0.12]">
-                  <th className="py-3 px-3.5 text-center w-12">No</th>
-                  <th className="py-3 px-3.5">Waktu</th>
-                  <th className="py-3 px-3.5">Mode</th>
-                  <th className="py-3 px-3.5">Input</th>
-                  <th className="py-3 px-3.5">Derajat (°)</th>
-                  <th className="py-3 px-3.5">Radian (rad)</th>
-                  <th className="py-3 px-3.5">Radian (π)</th>
-                  <th className="py-3 px-3.5">DMS</th>
-                  <th className="py-3 px-3.5 text-center print:hidden">Aksi</th>
-                </tr>
-              </thead>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                <caption className="sr-only">
+                  Tabel Log Praktikum Konversi Satuan Sudut
+                </caption>
+                <thead>
+                  <tr className="bg-[#101013] text-[#9ca3af] font-mono text-[11px] uppercase tracking-[0.06em] border-b border-white/[0.12]">
+                    <th scope="col" className="py-3 px-3.5 text-center w-12">No</th>
+                    <th scope="col" className="py-3 px-3.5">Waktu</th>
+                    <th scope="col" className="py-3 px-3.5">Mode</th>
+                    <th scope="col" className="py-3 px-3.5">Input</th>
+                    <th scope="col" className="py-3 px-3.5">Derajat (°)</th>
+                    <th scope="col" className="py-3 px-3.5">Radian (rad)</th>
+                    <th scope="col" className="py-3 px-3.5">Radian (π)</th>
+                    <th scope="col" className="py-3 px-3.5">DMS</th>
+                    <th scope="col" className="py-3 px-3.5 text-center print:hidden">Aksi</th>
+                  </tr>
+                </thead>
               <tbody className="divide-y divide-white/[0.08]">
                 {angleLogs.length === 0 ? (
                   <tr>

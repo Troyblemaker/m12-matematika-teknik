@@ -189,44 +189,66 @@ export default function M12DashboardPage() {
           }}
         />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 focus:outline-none"
+        >
           {activeTab === 'tujuan' && (
-            <Tab1LearningAndCalc
-              student={student}
-              angleLogs={angleLogs}
-              waveformLogs={waveformLogs}
-              arithmeticLogs={arithmeticLogs}
-              onAddArithmeticLog={handleAddArithmeticLog}
-              onDeleteArithmeticLog={handleDeleteArithmeticLog}
-              onClearArithmeticLogs={handleClearArithmeticLogs}
-              onLoadSampleToSimulator={handleLoadSampleToSimulator}
-            />
+            <section
+              id="panel-tujuan"
+              role="tabpanel"
+              aria-labelledby="tab-tujuan"
+            >
+              <Tab1LearningAndCalc
+                student={student}
+                angleLogs={angleLogs}
+                waveformLogs={waveformLogs}
+                arithmeticLogs={arithmeticLogs}
+                onAddArithmeticLog={handleAddArithmeticLog}
+                onDeleteArithmeticLog={handleDeleteArithmeticLog}
+                onClearArithmeticLogs={handleClearArithmeticLogs}
+                onLoadSampleToSimulator={handleLoadSampleToSimulator}
+              />
+            </section>
           )}
 
           {activeTab === 'konversi' && (
-            <Tab2AngleConverter
-              student={student}
-              angleLogs={angleLogs}
-              waveformLogs={waveformLogs}
-              arithmeticLogs={arithmeticLogs}
-              onAddAngleLog={handleAddAngleLog}
-              onDeleteAngleLog={handleDeleteAngleLog}
-              onClearAngleLogs={handleClearAngleLogs}
-            />
+            <section
+              id="panel-konversi"
+              role="tabpanel"
+              aria-labelledby="tab-konversi"
+            >
+              <Tab2AngleConverter
+                student={student}
+                angleLogs={angleLogs}
+                waveformLogs={waveformLogs}
+                arithmeticLogs={arithmeticLogs}
+                onAddAngleLog={handleAddAngleLog}
+                onDeleteAngleLog={handleDeleteAngleLog}
+                onClearAngleLogs={handleClearAngleLogs}
+              />
+            </section>
           )}
 
           {activeTab === 'sinusoidal' && (
-            <Tab3SinusoidalSimulator
-              student={student}
-              params={sinusoidalParams}
-              onChangeParams={setSinusoidalParams}
-              angleLogs={angleLogs}
-              waveformLogs={waveformLogs}
-              arithmeticLogs={arithmeticLogs}
-              onAddWaveformLog={handleAddWaveformLog}
-              onDeleteWaveformLog={handleDeleteWaveformLog}
-              onClearWaveformLogs={handleClearWaveformLogs}
-            />
+            <section
+              id="panel-sinusoidal"
+              role="tabpanel"
+              aria-labelledby="tab-sinusoidal"
+            >
+              <Tab3SinusoidalSimulator
+                student={student}
+                params={sinusoidalParams}
+                onChangeParams={setSinusoidalParams}
+                angleLogs={angleLogs}
+                waveformLogs={waveformLogs}
+                arithmeticLogs={arithmeticLogs}
+                onAddWaveformLog={handleAddWaveformLog}
+                onDeleteWaveformLog={handleDeleteWaveformLog}
+                onClearWaveformLogs={handleClearWaveformLogs}
+              />
+            </section>
           )}
         </main>
 
