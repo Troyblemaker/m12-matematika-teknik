@@ -231,24 +231,24 @@ export default function Tab1LearningAndCalc({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       {/* Section Header */}
       <div className="space-y-1">
         <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
           [01 · TUJUAN PEMBELAJARAN &amp; SCIENTIFIC CALCULATOR]
         </span>
-        <h2 className="text-xl sm:text-2xl font-bold text-[#f4f4f5] tracking-[-0.02em] print:text-black">
+        <h2 className="text-lg sm:text-2xl font-bold text-[#f4f4f5] tracking-[-0.02em] print:text-black">
           1. Tujuan Pembelajaran, Referensi Rumus &amp; Modern Scientific Calculator
         </h2>
-        <p className="text-sm text-[#c4c9cf] print:text-zinc-600">
+        <p className="text-xs sm:text-sm text-[#c4c9cf] print:text-zinc-600">
           Pelajari hubungan konversi satuan sudut, beda fase gelombang AC, serta gunakan kalkulator ilmiah presisi tinggi (50-digit Decimal.js) untuk evaluasi trigonometri, logaritma, dan eksponensial.
         </p>
       </div>
 
       {/* 3 Instructional Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-5">
         {/* Card 1: Konversi Satuan Sudut */}
-        <div className="cafe-card rounded-2xl p-6 flex flex-col justify-between space-y-5">
+        <div className="cafe-card rounded-2xl p-4 sm:p-6 flex flex-col justify-between space-y-4 sm:space-y-5">
           <div className="space-y-3.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
@@ -297,7 +297,7 @@ export default function Tab1LearningAndCalc({
         </div>
 
         {/* Card 2: Phase Angle (Lead vs Lag) */}
-        <div className="cafe-card rounded-2xl p-6 flex flex-col justify-between space-y-5">
+        <div className="cafe-card rounded-2xl p-4 sm:p-6 flex flex-col justify-between space-y-4 sm:space-y-5">
           <div className="space-y-3.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
@@ -368,7 +368,7 @@ export default function Tab1LearningAndCalc({
         </div>
 
         {/* Card 3: Parameter Sinusoidal AC */}
-        <div className="cafe-card rounded-2xl p-6 flex flex-col justify-between space-y-5">
+        <div className="cafe-card rounded-2xl p-4 sm:p-6 flex flex-col justify-between space-y-4 sm:space-y-5">
           <div className="space-y-3.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
@@ -453,9 +453,9 @@ export default function Tab1LearningAndCalc({
       {/* ====================================================================
           MODERN SCIENTIFIC CALCULATOR & LOG TABLE
          ==================================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
         {/* Scientific Calculator Console (6 cols) */}
-        <div className="lg:col-span-6 cafe-card rounded-2xl p-5 sm:p-6 space-y-4">
+        <div className="lg:col-span-6 cafe-card rounded-2xl p-3.5 sm:p-6 space-y-3.5 sm:space-y-4">
           {/* Top Console Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.12] pb-4">
             <div className="flex items-center gap-3">
@@ -664,7 +664,7 @@ export default function Tab1LearningAndCalc({
           </div>
 
           {/* 5-Column Modern Scientific Keypad */}
-          <div className="grid grid-cols-5 gap-2 pt-0.5 print:hidden">
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-2 pt-0.5 print:hidden">
             {/* Row 1: 2nd, sin/asin, cos/acos, tan/atan, sinh/cosh */}
             <button
               type="button"

@@ -295,21 +295,19 @@ export default function Tab3SinusoidalSimulator({
     }
   };
 
-  const computeTimeFromPointerEvent = (
-    e: React.MouseEvent<SVGSVGElement>
-  ): number | null => {
+  const computeTimeFromClientX = (clientX: number): number | null => {
     if (!svgRef.current || !analysis.isValid) return null;
     const rect = svgRef.current.getBoundingClientRect();
     if (rect.width <= 0) return null;
     const scaleX = svgWidth / rect.width;
-    const svgX = (e.clientX - rect.left) * scaleX;
+    const svgX = (clientX - rect.left) * scaleX;
     const clampedX = Math.max(padLeft, Math.min(svgWidth - padRight, svgX));
     const ratio = (clampedX - padLeft) / innerW;
     return ratio * maxTimeMs;
   };
 
   const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    const t = computeTimeFromPointerEvent(e);
+    const t = computeTimeFromClientX(e.clientX);
     if (t !== null) {
       setHoverTimeMs(t);
     }
@@ -320,11 +318,19 @@ export default function Tab3SinusoidalSimulator({
   };
 
   const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    const t = computeTimeFromPointerEvent(e);
+    const t = computeTimeFromClientX(e.clientX);
     if (t === null) return;
     if (pinnedTimeMs !== null) {
       setPinnedTimeMs(null);
     } else {
+      pinTimeAndSyncInput(t);
+    }
+  };
+
+  const handleSvgTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (e.touches.length === 0) return;
+    const t = computeTimeFromClientX(e.touches[0].clientX);
+    if (t !== null) {
       pinTimeAndSyncInput(t);
     }
   };
@@ -349,9 +355,9 @@ export default function Tab3SinusoidalSimulator({
   const majorVoltageFactors = [-1.0, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1.0];
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5 sm:space-y-7">
       {/* Header & Quick Sample Presets */}
-      <div className="cafe-card flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-5 rounded-2xl">
+      <div className="cafe-card flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5 sm:gap-4 p-4 sm:p-5 rounded-2xl">
         <div className="space-y-1">
           <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
             [03 · AC SINUSOIDAL WAVEFORM SIMULATOR]
@@ -360,12 +366,12 @@ export default function Tab3SinusoidalSimulator({
             3. AC Sinusoidal Waveform Simulator &amp; Analytical Solver
           </h2>
           <p className="text-xs sm:text-sm text-[#c4c9cf] print:text-zinc-600">
-            Hover/klik pada grafik osiloskop atau masukkan nilai waktu kustom <code className="text-[#f4f4f5]">t</code> untuk membaca nilai tegangan <code className="text-[#f4f4f5]">v(t)</code> secara instan.
+            Sentuh/geser pada grafik osiloskop atau masukkan nilai waktu kustom <code className="text-[#f4f4f5]">t</code> untuk membaca nilai tegangan <code className="text-[#f4f4f5]">v(t)</code> secara instan.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 print:hidden">
-          <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
+        <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2 print:hidden">
+          <span className="hidden sm:inline text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
             Preset:
           </span>
           <button
@@ -381,7 +387,7 @@ export default function Tab3SinusoidalSimulator({
                 vTarget: 200,
               });
             }}
-            className="px-3.5 py-1.5 rounded-full text-xs font-mono bg-[#222227] hover:bg-[#2c2c33] text-[#f4f4f5] border border-white/[0.16] transition-colors cursor-pointer"
+            className="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-xl sm:rounded-full text-xs font-mono bg-[#222227] hover:bg-[#2c2c33] text-[#f4f4f5] border border-white/[0.16] transition-colors cursor-pointer text-center"
           >
             Soal P12: 340 sin(50πt - 0.541)
           </button>
@@ -398,7 +404,7 @@ export default function Tab3SinusoidalSimulator({
                 vTarget: 200,
               });
             }}
-            className="px-3.5 py-1.5 rounded-full text-xs font-mono bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
+            className="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-xl sm:rounded-full text-xs font-mono bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer text-center"
           >
             Contoh Modul: 5 sin(100πt - 0.432)
           </button>
@@ -408,7 +414,7 @@ export default function Tab3SinusoidalSimulator({
       {/* ====================================================================
           CENTERPIECE: FULL-WIDTH INTERACTIVE OSCILLOSCOPE GRAPH
          ==================================================================== */}
-      <div className="cafe-card rounded-2xl p-5 sm:p-6 space-y-5">
+      <div className="cafe-card rounded-2xl p-3.5 sm:p-6 space-y-4 sm:space-y-5">
         {/* Top Bar: Graph Title, Equation Badge, & Phase Status Banner */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-white/[0.12] pb-4">
           <div className="space-y-1">
@@ -468,59 +474,59 @@ export default function Tab3SinusoidalSimulator({
           </div>
         </div>
 
-        {/* Live Telemetry Readout Bar (Updates as you hover over the graph!) */}
+        {/* Live Telemetry Readout Bar (Updates as you hover or touch-drag over the graph!) */}
         {analysis.isValid && (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 p-3 rounded-xl bg-[#101013] border border-white/[0.14] font-mono text-xs tabular-nums">
-            <div className="px-2.5 py-1.5 rounded-lg bg-[#18181c] border border-white/[0.1]">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-2.5 sm:p-3 rounded-xl bg-[#101013] border border-white/[0.14] font-mono text-xs tabular-nums">
+            <div className="px-2.5 py-2 rounded-lg bg-[#18181c] border border-white/[0.1]">
               <span className="text-[10px] uppercase tracking-[0.06em] text-[#9ca3af] flex items-center justify-between">
-                <span>WAKTU KURSOR (t)</span>
+                <span>WAKTU (t)</span>
                 {pinnedTimeMs !== null ? (
                   <Lock className="w-3 h-3 text-[#35ff92]" />
                 ) : (
                   <Crosshair className="w-3 h-3 text-[#9ca3af]" />
                 )}
               </span>
-              <div className="text-sm font-bold text-[#f4f4f5] mt-0.5">
+              <div className="text-xs sm:text-sm font-bold text-[#f4f4f5] mt-0.5 truncate">
                 {activeProbe
                   ? `${activeProbe.tMs.toFixed(2)} ms (${activeProbe.cycleFraction.toFixed(2)}T)`
-                  : 'Hover grafik...'}
+                  : 'Sentuh/Hover...'}
               </div>
             </div>
 
-            <div className="px-2.5 py-1.5 rounded-lg bg-[#18181c] border border-white/[0.1]">
+            <div className="px-2.5 py-2 rounded-lg bg-[#18181c] border border-white/[0.1]">
               <span className="text-[10px] uppercase tracking-[0.06em] text-[#9ca3af] block">
-                TEGANGAN SIMULASI v(t)
+                SIMULASI v(t)
               </span>
-              <div className="text-sm font-bold text-[#35ff92] mt-0.5">
+              <div className="text-xs sm:text-sm font-bold text-[#35ff92] mt-0.5 truncate">
                 {activeProbe ? `${activeProbe.vShifted.toFixed(2)} V` : `${analysis.vAtZero.toFixed(2)} V (t=0)`}
               </div>
             </div>
 
-            <div className="px-2.5 py-1.5 rounded-lg bg-[#18181c] border border-white/[0.1]">
+            <div className="px-2.5 py-2 rounded-lg bg-[#18181c] border border-white/[0.1]">
               <span className="text-[10px] uppercase tracking-[0.06em] text-[#9ca3af] block">
-                REFERENSI v_ref(t)
+                REFERENSI v_ref
               </span>
-              <div className="text-sm font-bold text-[#c4c9cf] mt-0.5">
+              <div className="text-xs sm:text-sm font-bold text-[#c4c9cf] mt-0.5 truncate">
                 {activeProbe ? `${activeProbe.vRef.toFixed(2)} V` : '0.00 V (t=0)'}
               </div>
             </div>
 
-            <div className="px-2.5 py-1.5 rounded-lg bg-[#18181c] border border-white/[0.1]">
+            <div className="px-2.5 py-2 rounded-lg bg-[#18181c] border border-white/[0.1]">
               <span className="text-[10px] uppercase tracking-[0.06em] text-[#9ca3af] block">
-                SELISIH Δv = v - v_ref
+                SELISIH Δv
               </span>
-              <div className="text-sm font-bold text-[#6090ff] mt-0.5">
+              <div className="text-xs sm:text-sm font-bold text-[#6090ff] mt-0.5 truncate">
                 {activeProbe
                   ? `${activeProbe.deltaV >= 0 ? '+' : ''}${activeProbe.deltaV.toFixed(2)} V`
                   : `${analysis.vAtZero >= 0 ? '+' : ''}${analysis.vAtZero.toFixed(2)} V`}
               </div>
             </div>
 
-            <div className="col-span-2 sm:col-span-1 px-2.5 py-1.5 rounded-lg bg-[#18181c] border border-white/[0.1] flex flex-col justify-between">
+            <div className="col-span-2 sm:col-span-1 px-2.5 py-2 rounded-lg bg-[#18181c] border border-white/[0.1] flex flex-col justify-between">
               <span className="text-[10px] uppercase tracking-[0.06em] text-[#9ca3af] block">
                 SUDUT FASE (ωt)
               </span>
-              <div className="text-sm font-bold text-[#f4f4f5] mt-0.5">
+              <div className="text-xs sm:text-sm font-bold text-[#f4f4f5] mt-0.5 truncate">
                 {activeProbe
                   ? `${activeProbe.angleRad.toFixed(2)} rad (${activeProbe.angleDeg.toFixed(1)}°)`
                   : '0.00 rad (0.0°)'}
@@ -536,15 +542,17 @@ export default function Tab3SinusoidalSimulator({
           </div>
         ) : (
           <div className="space-y-3.5">
-            {/* Main Interactive SVG Oscilloscope Canvas */}
-            <div className="w-full overflow-x-auto rounded-2xl bg-[#09090b] border border-white/[0.16] p-3 shadow-inner">
+            {/* Main Interactive SVG Oscilloscope Canvas — Responsive Full Width on Mobile & Desktop */}
+            <div className="w-full rounded-2xl bg-[#09090b] border border-white/[0.16] p-1.5 sm:p-3 shadow-inner">
               <svg
                 ref={svgRef}
                 viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                 onMouseMove={handleSvgMouseMove}
                 onMouseLeave={handleSvgMouseLeave}
                 onClick={handleSvgClick}
-                className="w-full h-auto min-w-[680px] cursor-crosshair select-none"
+                onTouchStart={handleSvgTouchMove}
+                onTouchMove={handleSvgTouchMove}
+                className="w-full h-auto cursor-crosshair select-none touch-pan-y"
                 role="img"
                 aria-label="Grafik Osiloskop Interaktif Gelombang Sinusoidal 1.25 Siklus"
               >
@@ -962,10 +970,10 @@ export default function Tab3SinusoidalSimulator({
             {/* ==============================================================
                 CUSTOM TIME INPUT BOX & INTERACTIVE TIME SCRUBBER BAR
                ============================================================== */}
-            <div className="p-4 rounded-xl bg-[#101013] border border-white/[0.14] space-y-3.5 print:hidden">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+            <div className="p-3 sm:p-4 rounded-xl bg-[#101013] border border-white/[0.14] space-y-3 sm:space-y-3.5 print:hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-center">
                 {/* Custom Time Value Input Box */}
-                <div className="lg:col-span-5 flex flex-col sm:flex-row sm:items-center gap-2.5">
+                <div className="lg:col-span-5 flex flex-col sm:flex-row sm:items-center gap-2">
                   <label
                     htmlFor="custom-time-input"
                     className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.06em] text-[#f4f4f5] whitespace-nowrap"
@@ -983,7 +991,7 @@ export default function Tab3SinusoidalSimulator({
                         handleCustomTimeChange(e.target.value, customTimeUnit)
                       }
                       placeholder="Contoh: 10 atau 7.45"
-                      className="cafe-input w-full px-3 py-1.5 text-sm font-mono tabular-nums rounded-xl"
+                      className="cafe-input w-full px-3 py-2 sm:py-1.5 text-base sm:text-sm font-mono tabular-nums rounded-xl"
                     />
 
                     {/* Unit Selector (ms / s) */}
@@ -1151,9 +1159,9 @@ export default function Tab3SinusoidalSimulator({
       {/* ====================================================================
           BELOW CENTERPIECE: PARAMETER CONTROLS (LEFT) & ANALYTICAL SOLVER (RIGHT)
          ==================================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
         {/* Left Column (5 cols): Parameter Controls */}
-        <div className="lg:col-span-5 cafe-card rounded-2xl p-6 space-y-4">
+        <div className="lg:col-span-5 cafe-card rounded-2xl p-4 sm:p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-white/[0.12] pb-3.5">
             <div>
               <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
@@ -1368,8 +1376,8 @@ export default function Tab3SinusoidalSimulator({
         </div>
 
         {/* Right Column (7 cols): Analytical Problem Solver Box (Hasil Analisis Jawaban Soal) */}
-        <div className="lg:col-span-7 cafe-card rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-white/[0.12] pb-3.5">
+        <div className="lg:col-span-7 cafe-card rounded-2xl p-4 sm:p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-white/[0.12] pb-3.5">
             <div>
               <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
                 [ANALYTICAL PROBLEM SOLVER]
@@ -1378,8 +1386,8 @@ export default function Tab3SinusoidalSimulator({
                 Hasil Analisis Jawaban Soal (a s.d. e) &amp; Evaluasi Waktu Kustom
               </h3>
             </div>
-            <span className="text-xs font-mono text-[#9ca3af]">
-              KLIK KARTU UNTUK LIHAT DI GRAFIK
+            <span className="text-[11px] font-mono text-[#9ca3af]">
+              TAP KARTU UNTUK LIHAT DI GRAFIK
             </span>
           </div>
 

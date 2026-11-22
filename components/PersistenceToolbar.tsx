@@ -70,16 +70,16 @@ export default function PersistenceToolbar({
 
   return (
     <div className="space-y-3 print:hidden">
-      <div className="cafe-card flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="cafe-card grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2 sm:gap-2.5 p-3 sm:p-3.5 rounded-2xl">
+        <div className="col-span-2 sm:col-span-1 grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           {onSaveTrial && (
             <button
               type="button"
               onClick={onSaveTrial}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-[#f4f4f5] hover:bg-white text-[#171515] transition-all active:scale-95 cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold bg-[#f4f4f5] hover:bg-white text-[#171515] transition-all active:scale-95 cursor-pointer min-h-[42px]"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>{saveButtonLabel}</span>
+              <PlusCircle className="w-4 h-4 shrink-0" />
+              <span className="truncate">{saveButtonLabel}</span>
             </button>
           )}
 
@@ -87,34 +87,34 @@ export default function PersistenceToolbar({
             type="button"
             onClick={handleExportExcel}
             disabled={isExporting}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-medium bg-[#222227] hover:bg-[#2c2c33] text-[#f4f4f5] border border-white/[0.16] transition-all disabled:opacity-50 cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full text-xs sm:text-sm font-medium bg-[#222227] hover:bg-[#2c2c33] text-[#f4f4f5] border border-white/[0.16] transition-all disabled:opacity-50 cursor-pointer min-h-[42px]"
           >
             {isExporting ? (
-              <Loader2 className="w-4 h-4 animate-spin text-[#35ff92]" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#35ff92] shrink-0" />
             ) : (
-              <FileSpreadsheet className="w-4 h-4 text-[#35ff92]" />
+              <FileSpreadsheet className="w-4 h-4 text-[#35ff92] shrink-0" />
             )}
             <span>Export Excel (.xlsx)</span>
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="col-span-2 sm:col-span-1 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={handlePrintPdf}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs sm:text-sm font-medium bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 sm:py-2 rounded-xl sm:rounded-full text-xs sm:text-sm font-medium bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer min-h-[42px]"
           >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print / Save PDF</span>
+            <Printer className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Print / PDF</span>
           </button>
 
           <button
             type="button"
             onClick={onClearCurrentLog}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs sm:text-sm font-medium bg-[#222227] hover:bg-red-950/50 text-[#c4c9cf] hover:text-red-300 border border-white/[0.14] hover:border-red-500/40 transition-colors cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 sm:py-2 rounded-xl sm:rounded-full text-xs sm:text-sm font-medium bg-[#222227] hover:bg-red-950/50 text-[#c4c9cf] hover:text-red-300 border border-white/[0.14] hover:border-red-500/40 transition-colors cursor-pointer min-h-[42px]"
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>{clearButtonLabel}</span>
+            <Trash2 className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{clearButtonLabel}</span>
           </button>
         </div>
       </div>

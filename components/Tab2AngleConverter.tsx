@@ -204,9 +204,9 @@ export default function Tab2AngleConverter({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       {/* Header & Practicum Target Tracker */}
-      <div className="cafe-card flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-5 rounded-2xl">
+      <div className="cafe-card flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5 sm:gap-4 p-4 sm:p-5 rounded-2xl">
         <div className="space-y-1">
           <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
             [02 · HUB-AND-SPOKE ANGLE CONVERTER]
@@ -219,10 +219,10 @@ export default function Tab2AngleConverter({
           </p>
         </div>
 
-        {/* Live Pill Badge Counters */}
-        <div className="flex flex-wrap items-center gap-2 font-mono text-xs tabular-nums">
-          <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#101013] border border-white/[0.14]">
-            <Target className="w-3.5 h-3.5 text-[#9ca3af]" />
+        {/* Live Pill Badge Counters — 2x2 Grid on Mobile, Flex Row on sm+ */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 font-mono text-xs tabular-nums">
+          <div className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl sm:rounded-full bg-[#101013] border border-white/[0.14]">
+            <Target className="w-3.5 h-3.5 text-[#9ca3af] shrink-0" />
             <span className="text-[#9ca3af]">Mode A:</span>
             <span
               className={
@@ -233,8 +233,8 @@ export default function Tab2AngleConverter({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#101013] border border-white/[0.14]">
-            <Target className="w-3.5 h-3.5 text-[#9ca3af]" />
+          <div className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl sm:rounded-full bg-[#101013] border border-white/[0.14]">
+            <Target className="w-3.5 h-3.5 text-[#9ca3af] shrink-0" />
             <span className="text-[#9ca3af]">Mode B:</span>
             <span
               className={
@@ -245,8 +245,8 @@ export default function Tab2AngleConverter({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#101013] border border-white/[0.14]">
-            <Target className="w-3.5 h-3.5 text-[#9ca3af]" />
+          <div className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl sm:rounded-full bg-[#101013] border border-white/[0.14]">
+            <Target className="w-3.5 h-3.5 text-[#9ca3af] shrink-0" />
             <span className="text-[#9ca3af]">Mode C:</span>
             <span
               className={
@@ -258,7 +258,7 @@ export default function Tab2AngleConverter({
           </div>
 
           <div
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold border ${
+            className={`flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl sm:rounded-full font-bold border ${
               modeCounts.total >= 12
                 ? 'bg-[#35ff92]/15 text-[#35ff92] border-[#35ff92]/40'
                 : 'bg-[#f4f4f5] text-[#171515] border-[#f4f4f5]'
@@ -270,11 +270,11 @@ export default function Tab2AngleConverter({
       </div>
 
       {/* Three Interactive Conversion Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* ================================================================
             CARD 1: MODE A (Degree Decimal °)
            ================================================================ */}
-        <div className="cafe-card rounded-2xl p-6 flex flex-col justify-between space-y-5">
+        <div className="cafe-card rounded-2xl p-4 sm:p-6 flex flex-col justify-between space-y-4 sm:space-y-5">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-white/[0.12] pb-3.5">
               <div>
@@ -360,7 +360,7 @@ export default function Tab2AngleConverter({
         {/* ================================================================
             CARD 2: MODE B (Radian rad & Symbolic π)
            ================================================================ */}
-        <div className="cafe-card rounded-2xl p-6 flex flex-col justify-between space-y-5">
+        <div className="cafe-card rounded-2xl p-4 sm:p-6 flex flex-col justify-between space-y-4 sm:space-y-5">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-white/[0.12] pb-3.5">
               <div>
@@ -457,7 +457,7 @@ export default function Tab2AngleConverter({
         {/* ================================================================
             CARD 3: MODE C (Komponen DMS ° ' ")
            ================================================================ */}
-        <div className="cafe-card rounded-2xl p-6 flex flex-col justify-between space-y-5">
+        <div className="cafe-card rounded-2xl p-4 sm:p-6 flex flex-col justify-between space-y-4 sm:space-y-5">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-white/[0.12] pb-3.5">
               <div>

@@ -25,6 +25,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom touch-friendly range slider for mobile oscilloscope scrubbing */
+input[type="range"] {
+  height: 6px;
+  border-radius: 9999px;
 }
 
 /* Tabular numbers for clean engineering & statistical alignment */
