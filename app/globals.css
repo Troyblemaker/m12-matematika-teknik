@@ -42,6 +42,36 @@ input[type="range"] {
   border-radius: 9999px;
 }
 
+/* Native dark dropdown options across Windows/macOS/Linux browsers */
+select.cafe-input option {
+  background-color: #101013;
+  color: #f4f4f5;
+}
+
+/* Subtle dark scrollbar for horizontal tables & chip rows */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0c;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
 /* Tabular numbers for clean engineering & statistical alignment */
 .tabular-nums {
   font-variant-numeric: tabular-nums;

@@ -210,23 +210,47 @@ export default function Tab1LearningAndCalc({
 
   const handleLoadSampleP12 = () => {
     onLoadSampleToSimulator({
+      questionLabel: 'Problem 12 H.255',
+      problemDetails:
+        'Diketahui tegangan AC v(t) = 340 sin(50πt - 0,541) V. Tentukan parameter gelombang, tegangan saat t = 0 & t = 10 ms, serta waktu pertama mencapai 200 V dan maksimum +340 V.',
+      quantityType: 'v',
       amplitude: 340,
       omegaInput: '50π',
       waveType: 'sin',
       phaseSign: '-',
       phiInput: '0.541',
+      tUjiMs: 10,
       vTarget: 200,
+      subProblems: [
+        { id: 'p12-a', label: 'a', prompt: 'Periode (T), Frekuensi (f), dan Sudut Fase (φ)', type: 'params' },
+        { id: 'p12-b', label: 'b', prompt: 'Tegangan v saat t = 0 ms', type: 'value_at_time', timeValueMs: 0 },
+        { id: 'p12-c', label: 'c', prompt: 'Tegangan v saat t = 10 ms', type: 'value_at_time', timeValueMs: 10 },
+        { id: 'p12-d', label: 'd', prompt: 'Waktu t pertama saat v = 200 V', type: 'time_at_value', targetValue: 200 },
+        { id: 'p12-e', label: 'e', prompt: 'Waktu t pertama saat v Maksimum (+340 V)', type: 'time_at_max' },
+      ],
     });
   };
 
   const handleLoadSample2 = () => {
     onLoadSampleToSimulator({
+      questionLabel: 'PE 118 NO 7 H.256',
+      problemDetails:
+        'Diketahui arus AC i(t) = 5 sin(100πt - 0,432) A. Tentukan (a) periode, frekuensi, sudut fase, (b) arus saat t = 0, (c) arus saat t = 8 ms, (d) waktu pertama saat i = 3 A, dan (e) waktu pertama mencapai maksimum.',
+      quantityType: 'i',
       amplitude: 5,
       omegaInput: '100π',
       waveType: 'sin',
       phaseSign: '-',
       phiInput: '0.432',
-      vTarget: 200,
+      tUjiMs: 8,
+      vTarget: 3,
+      subProblems: [
+        { id: 'pe7-a', label: 'a', prompt: 'Periode (T), Frekuensi (f), dan Sudut Fase (φ)', type: 'params' },
+        { id: 'pe7-b', label: 'b', prompt: 'Arus i saat t = 0 ms', type: 'value_at_time', timeValueMs: 0 },
+        { id: 'pe7-c', label: 'c', prompt: 'Arus i saat t = 8 ms', type: 'value_at_time', timeValueMs: 8 },
+        { id: 'pe7-d', label: 'd', prompt: 'Waktu t pertama saat i = 3 A', type: 'time_at_value', targetValue: 3 },
+        { id: 'pe7-e', label: 'e', prompt: 'Waktu t pertama saat i Maksimum (+5 A)', type: 'time_at_max' },
+      ],
     });
   };
 
@@ -442,7 +466,7 @@ export default function Tab1LearningAndCalc({
                   onClick={handleLoadSample2}
                   className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-mono bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
                 >
-                  <span>Contoh 2: v(t) = 5 sin(100πt - 0.432) V</span>
+                  <span>PE 118 NO 7: i(t) = 5 sin(100πt - 0.432) A</span>
                 </button>
               </div>
             </div>
@@ -512,7 +536,7 @@ export default function Tab1LearningAndCalc({
             <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] block">
               Preset Uji Ilmiah &amp; Praktikum M12
             </span>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap gap-1.5 no-scrollbar">
               {SCIENTIFIC_PRESETS.map((preset) => (
                 <button
                   key={preset.label}
@@ -524,7 +548,7 @@ export default function Tab1LearningAndCalc({
                       setAngleUnit(preset.mode);
                     }
                   }}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-mono bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
+                  className="shrink-0 sm:shrink px-2.5 py-1 rounded-full text-[11px] font-mono bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
                 >
                   {preset.label}
                 </button>
@@ -579,7 +603,7 @@ export default function Tab1LearningAndCalc({
                   }
                 }}
                 placeholder="Masukkan ekspresi ilmiah, misal: 340 × sin(50π × 0.01 - 0.541)"
-                className="w-full bg-transparent text-[#f4f4f5] font-mono text-sm sm:text-base focus:outline-none placeholder-[#9ca3af]/40"
+                className="w-full bg-transparent text-[#f4f4f5] font-mono text-base focus:outline-none placeholder-[#9ca3af]/40"
               />
             </div>
 
@@ -671,7 +695,7 @@ export default function Tab1LearningAndCalc({
           </div>
 
           {/* 5-Column Modern Scientific Keypad */}
-          <div className="grid grid-cols-5 gap-1.5 sm:gap-2 pt-0.5 print:hidden">
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-2 pt-0.5 print:hidden [&>button]:min-h-[44px]">
             {/* Row 1: 2nd, sin/asin, cos/acos, tan/atan, sinh/cosh */}
             <button
               type="button"
@@ -969,7 +993,7 @@ export default function Tab1LearningAndCalc({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Misal: Tegangan sesaat saat t = 10 ms"
-                className="cafe-input w-full px-3.5 py-2 text-xs rounded-xl placeholder-[#9ca3af]/40"
+                className="cafe-input w-full px-3.5 py-2 text-base sm:text-xs rounded-xl placeholder-[#9ca3af]/40"
               />
             </div>
 
@@ -1009,7 +1033,7 @@ export default function Tab1LearningAndCalc({
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <table className="w-full min-w-[540px] text-left border-collapse text-xs sm:text-sm">
                 <caption className="sr-only">
                   Tabel Log Perhitungan Scientific Calculator
                 </caption>

@@ -308,7 +308,7 @@ export default function Tab2AngleConverter({
                     setLastActiveMode('Mode A');
                   }}
                   placeholder="50.145"
-                  className="cafe-input w-full px-3.5 py-2.5 pr-10 text-base font-mono tabular-nums rounded-xl"
+                  className="cafe-input w-full min-h-[42px] px-3.5 py-2.5 pr-10 text-base sm:text-sm font-mono tabular-nums rounded-xl"
                 />
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-mono text-[#9ca3af]">
                   °
@@ -323,7 +323,7 @@ export default function Tab2AngleConverter({
                       setModeAInput(sample);
                       setLastActiveMode('Mode A');
                     }}
-                    className="px-2.5 py-0.5 text-[11px] font-mono tabular-nums rounded-full bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
+                    className="px-2.5 py-1 sm:py-0.5 text-[11px] font-mono tabular-nums rounded-full bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
                   >
                     {sample}°
                   </button>
@@ -333,14 +333,14 @@ export default function Tab2AngleConverter({
 
             {/* Mode A Outputs */}
             {modeAEval.valid && modeAEval.data ? (
-              <div className="space-y-2 pt-1">
+              <div role="status" aria-live="polite" className="space-y-2 pt-1">
                 <OutputRow label="Derajat Desimal (°)" value={modeAEval.data.degFormatted} highlight="white" />
                 <OutputRow label="Radian Desimal (rad)" value={modeAEval.data.radDecFormatted} />
                 <OutputRow label="Radian Simbolik (π)" value={modeAEval.data.radPiFormatted} highlight="mint" />
                 <OutputRow label="Komponen DMS (° ' &quot;)" value={modeAEval.data.dms.formatted} highlight="blue" />
               </div>
             ) : (
-              <div className="p-3 rounded-xl bg-[#101013] border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+              <div role="alert" className="p-3 rounded-xl bg-[#101013] border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{modeAEval.error}</span>
               </div>
@@ -394,7 +394,7 @@ export default function Tab2AngleConverter({
                     setLastActiveMode('Mode B');
                   }}
                   placeholder="3π/4"
-                  className="cafe-input w-full px-3.5 py-2.5 pr-14 text-base font-mono tabular-nums rounded-xl"
+                  className="cafe-input w-full min-h-[42px] px-3.5 py-2.5 pr-14 text-base sm:text-sm font-mono tabular-nums rounded-xl"
                 />
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-[#9ca3af]">
                   rad
@@ -415,7 +415,7 @@ export default function Tab2AngleConverter({
                         setModeBInput(preset);
                         setLastActiveMode('Mode B');
                       }}
-                      className={`px-2.5 py-0.5 text-xs font-mono rounded-full border transition-colors cursor-pointer ${
+                      className={`px-2.5 py-1 sm:py-0.5 text-xs font-mono rounded-full border transition-colors cursor-pointer ${
                         modeBInput.trim() === preset
                           ? 'bg-[#f4f4f5] text-[#171515] border-[#f4f4f5] font-bold'
                           : 'bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] border-white/[0.14]'
@@ -430,14 +430,14 @@ export default function Tab2AngleConverter({
 
             {/* Mode B Outputs */}
             {modeBEval.valid && modeBEval.data ? (
-              <div className="space-y-2 pt-1">
+              <div role="status" aria-live="polite" className="space-y-2 pt-1">
                 <OutputRow label="Derajat Desimal (°)" value={modeBEval.data.degFormatted} highlight="white" />
                 <OutputRow label="Radian Desimal (rad)" value={modeBEval.data.radDecFormatted} />
                 <OutputRow label="Radian Simbolik (π)" value={modeBEval.data.radPiFormatted} highlight="mint" />
                 <OutputRow label="Komponen DMS (° ' &quot;)" value={modeBEval.data.dms.formatted} highlight="blue" />
               </div>
             ) : (
-              <div className="p-3 rounded-xl bg-[#101013] border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+              <div role="alert" className="p-3 rounded-xl bg-[#101013] border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{modeBEval.error}</span>
               </div>
@@ -475,13 +475,18 @@ export default function Tab2AngleConverter({
             </div>
 
             <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
                   Komponen D, M, S
                 </span>
-                <div className="inline-flex rounded-full bg-[#101013] p-0.5 border border-white/[0.14]">
+                <div
+                  role="group"
+                  aria-label="Tanda sudut DMS"
+                  className="inline-flex rounded-full bg-[#101013] p-0.5 border border-white/[0.14]"
+                >
                   <button
                     type="button"
+                    aria-pressed={modeCSign === '+'}
                     onClick={() => {
                       setModeCSign('+');
                       setLastActiveMode('Mode C');
@@ -496,6 +501,7 @@ export default function Tab2AngleConverter({
                   </button>
                   <button
                     type="button"
+                    aria-pressed={modeCSign === '-'}
                     onClick={() => {
                       setModeCSign('-');
                       setLastActiveMode('Mode C');
@@ -513,12 +519,13 @@ export default function Tab2AngleConverter({
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label htmlFor="dms-d" className="block text-[10px] font-mono uppercase tracking-[0.06em] text-[#9ca3af] mb-1">
-                    Deg D (°)
+                  <label htmlFor="dms-d" className="block text-[10px] font-mono uppercase tracking-[0.06em] text-[#9ca3af] mb-1 truncate">
+                    Deg (°)
                   </label>
                   <input
                     id="dms-d"
                     type="number"
+                    inputMode="numeric"
                     min="0"
                     step="1"
                     value={modeCDeg}
@@ -526,17 +533,18 @@ export default function Tab2AngleConverter({
                       setModeCDeg(e.target.value);
                       setLastActiveMode('Mode C');
                     }}
-                    className="cafe-input w-full px-2.5 py-2 text-sm font-mono tabular-nums rounded-xl"
+                    className="cafe-input w-full min-h-[42px] px-2.5 py-2 text-base sm:text-sm font-mono tabular-nums rounded-xl"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="dms-m" className="block text-[10px] font-mono uppercase tracking-[0.06em] text-[#9ca3af] mb-1">
-                    Min M (&apos;)
+                  <label htmlFor="dms-m" className="block text-[10px] font-mono uppercase tracking-[0.06em] text-[#9ca3af] mb-1 truncate">
+                    Min (&apos;)
                   </label>
                   <input
                     id="dms-m"
                     type="number"
+                    inputMode="numeric"
                     min="0"
                     max="59"
                     step="1"
@@ -545,17 +553,18 @@ export default function Tab2AngleConverter({
                       setModeCMin(e.target.value);
                       setLastActiveMode('Mode C');
                     }}
-                    className="cafe-input w-full px-2.5 py-2 text-sm font-mono tabular-nums rounded-xl"
+                    className="cafe-input w-full min-h-[42px] px-2.5 py-2 text-base sm:text-sm font-mono tabular-nums rounded-xl"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="dms-s" className="block text-[10px] font-mono uppercase tracking-[0.06em] text-[#9ca3af] mb-1">
-                    Sec S (&quot;)
+                  <label htmlFor="dms-s" className="block text-[10px] font-mono uppercase tracking-[0.06em] text-[#9ca3af] mb-1 truncate">
+                    Sec (&quot;)
                   </label>
                   <input
                     id="dms-s"
                     type="number"
+                    inputMode="decimal"
                     min="0"
                     max="59.99"
                     step="0.01"
@@ -564,7 +573,7 @@ export default function Tab2AngleConverter({
                       setModeCSec(e.target.value);
                       setLastActiveMode('Mode C');
                     }}
-                    className="cafe-input w-full px-2.5 py-2 text-sm font-mono tabular-nums rounded-xl"
+                    className="cafe-input w-full min-h-[42px] px-2.5 py-2 text-base sm:text-sm font-mono tabular-nums rounded-xl"
                   />
                 </div>
               </div>
@@ -585,7 +594,7 @@ export default function Tab2AngleConverter({
                       setModeCSign(sample.sign);
                       setLastActiveMode('Mode C');
                     }}
-                    className="px-2.5 py-0.5 text-[11px] font-mono tabular-nums rounded-full bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
+                    className="px-2.5 py-1 sm:py-0.5 text-[11px] font-mono tabular-nums rounded-full bg-[#101013] hover:bg-[#222227] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
                   >
                     {sample.label}
                   </button>
@@ -595,14 +604,14 @@ export default function Tab2AngleConverter({
 
             {/* Mode C Outputs */}
             {modeCEval.valid && modeCEval.data ? (
-              <div className="space-y-2 pt-1">
+              <div role="status" aria-live="polite" className="space-y-2 pt-1">
                 <OutputRow label="Derajat Desimal (°)" value={modeCEval.data.degFormatted} highlight="white" />
                 <OutputRow label="Radian Desimal (rad)" value={modeCEval.data.radDecFormatted} />
                 <OutputRow label="Radian Simbolik (π)" value={modeCEval.data.radPiFormatted} highlight="mint" />
                 <OutputRow label="Komponen DMS (° ' &quot;)" value={modeCEval.data.dms.formatted} highlight="blue" />
               </div>
             ) : (
-              <div className="p-3 rounded-xl bg-[#101013] border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+              <div role="alert" className="p-3 rounded-xl bg-[#101013] border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{modeCEval.error}</span>
               </div>
@@ -645,12 +654,12 @@ export default function Tab2AngleConverter({
           </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <table className="w-full min-w-[680px] text-left border-collapse text-xs sm:text-sm">
                 <caption className="sr-only">
                   Tabel Log Praktikum Konversi Satuan Sudut
                 </caption>
                 <thead>
-                  <tr className="bg-[#101013] text-[#9ca3af] font-mono text-[11px] uppercase tracking-[0.06em] border-b border-white/[0.12]">
+                  <tr className="bg-[#101013] text-[#9ca3af] font-mono text-[11px] uppercase tracking-[0.06em] border-b border-white/[0.12] whitespace-nowrap">
                     <th scope="col" className="py-3 px-3.5 text-center w-12">No</th>
                     <th scope="col" className="py-3 px-3.5">Waktu</th>
                     <th scope="col" className="py-3 px-3.5">Mode</th>
@@ -676,7 +685,7 @@ export default function Tab2AngleConverter({
                   angleLogs.map((log, index) => (
                     <tr
                       key={log.id}
-                      className="hover:bg-white/[0.03] transition-colors"
+                      className="hover:bg-white/[0.03] transition-colors whitespace-nowrap"
                     >
                       <td className="py-3 px-3.5 font-mono tabular-nums text-center text-[#9ca3af]">
                         {index + 1}

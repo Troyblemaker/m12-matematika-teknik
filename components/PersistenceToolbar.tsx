@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import {
   AlertTriangle,
+  CheckCircle2,
   FileSpreadsheet,
   Loader2,
   PlusCircle,
@@ -39,7 +40,16 @@ export default function PersistenceToolbar({
   clearButtonLabel = 'Clear Log',
 }: PersistenceToolbarProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const [justExported, setJustExported] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+
+  const handleSaveClick = () => {
+    if (!onSaveTrial) return;
+    onSaveTrial();
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 1500);
+  };
 
   const handleExportExcel = async () => {
     setLocalError(null);
@@ -51,6 +61,8 @@ export default function PersistenceToolbar({
         waveformLogs,
         arithmeticLogs,
       });
+      setJustExported(true);
+      setTimeout(() => setJustExported(false), 1800);
     } catch (err) {
       setLocalError(
         err instanceof Error
@@ -75,11 +87,21 @@ export default function PersistenceToolbar({
           {onSaveTrial && (
             <button
               type="button"
-              onClick={onSaveTrial}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold bg-[#f4f4f5] hover:bg-white text-[#171515] transition-all active:scale-95 cursor-pointer min-h-[42px]"
+              onClick={handleSaveClick}
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full text-xs sm:text-sm font-semibold transition-all active:scale-95 cursor-pointer min-h-[42px] ${
+                justSaved
+                  ? 'bg-[#35ff92] text-[#171515]'
+                  : 'bg-[#f4f4f5] hover:bg-white text-[#171515]'
+              }`}
             >
-              <PlusCircle className="w-4 h-4 shrink-0" />
-              <span className="truncate">{saveButtonLabel}</span>
+              {justSaved ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <PlusCircle className="w-4 h-4 shrink-0" />
+              )}
+              <span className="truncate">
+                {justSaved ? 'Tersimpan ke Log!' : saveButtonLabel}
+              </span>
             </button>
           )}
 
@@ -91,10 +113,12 @@ export default function PersistenceToolbar({
           >
             {isExporting ? (
               <Loader2 className="w-4 h-4 animate-spin text-[#35ff92] shrink-0" />
+            ) : justExported ? (
+              <CheckCircle2 className="w-4 h-4 text-[#35ff92] shrink-0" />
             ) : (
               <FileSpreadsheet className="w-4 h-4 text-[#35ff92] shrink-0" />
             )}
-            <span>Export Excel (.xlsx)</span>
+            <span>{justExported ? 'Excel Diunduh!' : 'Export Excel (.xlsx)'}</span>
           </button>
         </div>
 

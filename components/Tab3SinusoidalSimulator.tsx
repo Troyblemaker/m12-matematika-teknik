@@ -238,13 +238,13 @@ export default function Tab3SinusoidalSimulator({
     onAddWaveformLog(entry);
   };
 
-  // Large Centerpiece SVG Dimensions & Padding
-  const svgWidth = 1080;
-  const svgHeight = 470;
-  const padLeft = 78;
-  const padRight = 40;
-  const padTop = 38;
-  const padBottom = 64;
+  // Centerpiece SVG Dimensions & Padding (tuned for high-contrast readability on both mobile & desktop)
+  const svgWidth = 860;
+  const svgHeight = 410;
+  const padLeft = 72;
+  const padRight = 32;
+  const padTop = 36;
+  const padBottom = 56;
   const innerW = svgWidth - padLeft - padRight;
   const innerH = svgHeight - padTop - padBottom;
 
@@ -300,7 +300,7 @@ export default function Tab3SinusoidalSimulator({
     return list.map((sp) => {
       let tier = 0;
       for (const prev of placed) {
-        if (Math.abs(sp.x - prev.x) < 92 && prev.tier === tier) {
+        if (Math.abs(sp.x - prev.x) < 96 && prev.tier === tier) {
           tier = (tier + 1) % 3;
         }
       }
@@ -821,10 +821,10 @@ export default function Tab3SinusoidalSimulator({
                         strokeDasharray={isZeroAxis ? undefined : '4 4'}
                       />
                       <text
-                        x={padLeft - 10}
+                        x={padLeft - 8}
                         y={y + 4}
                         textAnchor="end"
-                        className={`font-mono text-[11px] ${
+                        className={`font-mono text-[12px] ${
                           isZeroAxis || isPeak
                             ? 'fill-[#f8fafc] font-bold'
                             : 'fill-[#94a3b8]'
@@ -871,7 +871,7 @@ export default function Tab3SinusoidalSimulator({
                         x={x}
                         y={svgHeight - padBottom + 18}
                         textAnchor="middle"
-                        className={`font-mono text-[10.5px] ${
+                        className={`font-mono text-[11.5px] ${
                           isFullPeriod
                             ? 'fill-[#35ff92] font-bold'
                             : isQuarter
@@ -884,9 +884,9 @@ export default function Tab3SinusoidalSimulator({
                       {isQuarter && (
                         <text
                           x={x}
-                          y={svgHeight - padBottom + 32}
+                          y={svgHeight - padBottom + 33}
                           textAnchor="middle"
-                          className={`font-mono text-[9.5px] ${
+                          className={`font-mono text-[10.5px] ${
                             isFullPeriod ? 'fill-[#35ff92]' : 'fill-[#64748b]'
                           }`}
                         >
@@ -926,12 +926,12 @@ export default function Tab3SinusoidalSimulator({
                 {showKeyMarkers &&
                   plottableSubProblems.map((sp) => {
                     const pt = sp.plotPoint!;
-                    const badgeW = 86;
-                    const badgeH = 20;
+                    const badgeW = 92;
+                    const badgeH = 22;
                     const badgeY =
                       sp.y > zeroY
-                        ? zeroY - 26 - sp.xBadgeTier * 22
-                        : zeroY + 8 + sp.xBadgeTier * 22;
+                        ? zeroY - 28 - sp.xBadgeTier * 24
+                        : zeroY + 8 + sp.xBadgeTier * 24;
                     const clampedBadgeX = Math.max(
                       padLeft + 4,
                       Math.min(svgWidth - padRight - badgeW - 4, sp.x - badgeW / 2)
@@ -965,14 +965,14 @@ export default function Tab3SinusoidalSimulator({
                         <circle
                           cx={sp.x}
                           cy={sp.y}
-                          r={8.5}
+                          r={9}
                           fill={sp.color}
                           opacity={0.22}
                         />
                         <circle
                           cx={sp.x}
                           cy={sp.y}
-                          r={5.2}
+                          r={5.5}
                           fill={sp.color}
                           stroke="#070c17"
                           strokeWidth={2}
@@ -980,18 +980,18 @@ export default function Tab3SinusoidalSimulator({
                         {/* Sub-problem letter badge directly above/below the dot */}
                         <circle
                           cx={sp.x}
-                          cy={sp.y > padTop + 26 ? sp.y - 17 : sp.y + 17}
-                          r={9.5}
+                          cy={sp.y > padTop + 28 ? sp.y - 18 : sp.y + 18}
+                          r={10.5}
                           fill="#0b111e"
                           stroke={sp.color}
-                          strokeWidth={1.5}
+                          strokeWidth={1.6}
                         />
                         <text
                           x={sp.x}
-                          y={sp.y > padTop + 26 ? sp.y - 13.5 : sp.y + 20.5}
+                          y={sp.y > padTop + 28 ? sp.y - 14 : sp.y + 22}
                           textAnchor="middle"
                           fill={sp.color}
-                          className="font-mono text-[10.5px] font-bold"
+                          className="font-mono text-[11.5px] font-bold"
                         >
                           {sp.item.label}
                         </text>
@@ -1009,10 +1009,10 @@ export default function Tab3SinusoidalSimulator({
                         />
                         <text
                           x={clampedBadgeX + badgeW / 2}
-                          y={badgeY + 13.5}
+                          y={badgeY + 14.5}
                           textAnchor="middle"
                           fill={sp.color}
-                          className="font-mono text-[10px] font-bold"
+                          className="font-mono text-[10.5px] font-bold"
                         >
                           ({sp.item.label}) {pt.tMs === 0 ? `${pt.yVal.toFixed(2)}${unitSymbol}` : `${pt.tMs.toFixed(2)}ms`}
                         </text>
@@ -1126,15 +1126,15 @@ export default function Tab3SinusoidalSimulator({
                 <text
                   x={padLeft + 8}
                   y={padTop - 12}
-                  className="fill-[#f8fafc] font-mono text-[12px] font-bold"
+                  className="fill-[#f8fafc] font-mono text-[12.5px] font-bold"
                 >
                   {qtyName} {varName}(t) [{unitSymbol}]
                 </text>
                 <text
                   x={svgWidth - padRight}
-                  y={svgHeight - 8}
+                  y={svgHeight - 6}
                   textAnchor="end"
-                  className="fill-[#f8fafc] font-mono text-[12px] font-bold"
+                  className="fill-[#f8fafc] font-mono text-[12.5px] font-bold"
                 >
                   Waktu t [milidetik / ms]
                 </text>
@@ -1143,9 +1143,9 @@ export default function Tab3SinusoidalSimulator({
 
             {/* Color-Coded Sub-Problem Key-Point Chips directly below the Graph */}
             {plottableSubProblems.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 print:hidden">
-                <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
-                  Titik Sub-Soal di Grafik:
+              <div className="flex overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap items-center gap-2 no-scrollbar print:hidden">
+                <span className="shrink-0 text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
+                  Titik Sub-Soal:
                 </span>
                 {plottableSubProblems.map((sp) => (
                   <button
@@ -1153,7 +1153,7 @@ export default function Tab3SinusoidalSimulator({
                     type="button"
                     onClick={() => pinTimeAndSyncInput(sp.plotPoint!.tMs)}
                     style={{ borderColor: `${sp.color}66` }}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#101013] hover:bg-[#1c1c22] border text-xs font-mono transition-colors cursor-pointer"
+                    className="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#101013] hover:bg-[#1c1c22] border text-xs font-mono transition-colors cursor-pointer"
                   >
                     <span
                       className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -1172,7 +1172,7 @@ export default function Tab3SinusoidalSimulator({
                   <button
                     type="button"
                     onClick={() => setPinnedTimeMs(null)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-red-950/40 hover:bg-red-950/70 text-red-300 border border-red-500/30 text-xs font-mono cursor-pointer"
+                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-red-950/40 hover:bg-red-950/70 text-red-300 border border-red-500/30 text-xs font-mono cursor-pointer"
                   >
                     <Unlock className="w-3 h-3" />
                     <span>Lepas Kunci</span>
@@ -1376,7 +1376,7 @@ export default function Tab3SinusoidalSimulator({
                   })
                 }
                 placeholder="Tulis keterangan soal, misal: Diketahui arus AC i(t) = 5 sin(100πt - 0,432) A..."
-                className="cafe-input w-full px-3 py-2 text-xs sm:text-sm rounded-xl resize-y"
+                className="cafe-input w-full px-3 py-2 text-base sm:text-sm rounded-xl resize-y"
               />
             </div>
           </div>
@@ -1616,7 +1616,7 @@ export default function Tab3SinusoidalSimulator({
                         })
                       }
                       aria-label={`Label sub-soal ${sp.item.label}`}
-                      className="cafe-input w-10 px-1.5 py-1 text-center font-mono text-xs font-bold rounded-lg"
+                      className="cafe-input w-11 px-1.5 py-1.5 sm:py-1 text-center font-mono text-base sm:text-xs font-bold rounded-lg"
                       style={{ color: sp.color }}
                     />
                     <span className="font-mono text-xs text-[#9ca3af]">)</span>
@@ -1631,7 +1631,7 @@ export default function Tab3SinusoidalSimulator({
                       })
                     }
                     aria-label={`Tipe pertanyaan sub-soal ${sp.item.label}`}
-                    className="cafe-input flex-1 min-w-[190px] px-2.5 py-1.5 text-xs font-mono rounded-lg"
+                    className="cafe-input flex-1 min-w-[140px] px-2.5 py-2 sm:py-1.5 text-base sm:text-xs font-mono rounded-lg"
                   >
                     {SUBPROBLEM_TYPE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -1646,6 +1646,7 @@ export default function Tab3SinusoidalSimulator({
                       <span className="text-[11px] font-mono text-[#9ca3af]">t =</span>
                       <input
                         type="number"
+                        inputMode="decimal"
                         step="any"
                         min="0"
                         value={sp.item.timeValueMs ?? 0}
@@ -1655,7 +1656,7 @@ export default function Tab3SinusoidalSimulator({
                           })
                         }
                         aria-label={`Nilai waktu t untuk sub-soal ${sp.item.label}`}
-                        className="cafe-input w-20 px-2 py-1 text-xs font-mono tabular-nums rounded-lg"
+                        className="cafe-input w-24 sm:w-20 px-2.5 py-1.5 sm:py-1 text-base sm:text-xs font-mono tabular-nums rounded-lg"
                       />
                       <span className="text-[11px] font-mono text-[#9ca3af]">ms</span>
                     </div>
@@ -1668,6 +1669,7 @@ export default function Tab3SinusoidalSimulator({
                       </span>
                       <input
                         type="number"
+                        inputMode="decimal"
                         step="any"
                         value={sp.item.targetValue ?? 0}
                         onChange={(e) =>
@@ -1676,7 +1678,7 @@ export default function Tab3SinusoidalSimulator({
                           })
                         }
                         aria-label={`Nilai target untuk sub-soal ${sp.item.label}`}
-                        className="cafe-input w-20 px-2 py-1 text-xs font-mono tabular-nums rounded-lg"
+                        className="cafe-input w-24 sm:w-20 px-2.5 py-1.5 sm:py-1 text-base sm:text-xs font-mono tabular-nums rounded-lg"
                       />
                       <span className="text-[11px] font-mono text-[#9ca3af]">
                         {unitSymbol}
@@ -1685,16 +1687,16 @@ export default function Tab3SinusoidalSimulator({
                   )}
 
                   {/* Quick Jump to Graph & Delete Buttons */}
-                  <div className="flex items-center gap-1 ml-auto print:hidden">
+                  <div className="flex items-center gap-1.5 ml-auto print:hidden">
                     {sp.plotPoint && (
                       <button
                         type="button"
                         onClick={() => pinTimeAndSyncInput(sp.plotPoint!.tMs)}
                         title="Sorot titik ini di grafik osiloskop"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#18181c] hover:bg-[#222227] border border-white/[0.14] text-[11px] font-mono text-[#f4f4f5] cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 sm:py-1 rounded-lg bg-[#18181c] hover:bg-[#222227] border border-white/[0.14] text-[11px] font-mono text-[#f4f4f5] cursor-pointer"
                       >
-                        <Target className="w-3 h-3" style={{ color: sp.color }} />
-                        <span className="hidden sm:inline">Plot</span>
+                        <Target className="w-3.5 h-3.5 sm:w-3 sm:h-3" style={{ color: sp.color }} />
+                        <span>Plot</span>
                       </button>
                     )}
                     <button
@@ -1702,7 +1704,7 @@ export default function Tab3SinusoidalSimulator({
                       onClick={() => handleDeleteSubProblem(sp.item.id)}
                       disabled={activeSubProblems.length <= 1}
                       title="Hapus sub-soal"
-                      className="p-1.5 rounded-lg text-[#9ca3af] hover:text-red-400 hover:bg-white/[0.06] disabled:opacity-30 transition-colors cursor-pointer"
+                      className="p-2 sm:p-1.5 rounded-lg text-[#9ca3af] hover:text-red-400 hover:bg-white/[0.06] disabled:opacity-30 transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1720,12 +1722,12 @@ export default function Tab3SinusoidalSimulator({
                   }
                   placeholder="Tulis teks pertanyaan sub-soal (misal: Nilai arus saat t = 8 ms)"
                   aria-label={`Deskripsi pertanyaan sub-soal ${sp.item.label}`}
-                  className="cafe-input w-full px-3 py-1.5 text-xs rounded-lg placeholder-[#9ca3af]/40"
+                  className="cafe-input w-full px-3 py-2 sm:py-1.5 text-base sm:text-xs rounded-lg placeholder-[#9ca3af]/40"
                 />
 
                 {/* Row 3: Live Computed Result & Formula Preview */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 px-3 py-2 rounded-lg bg-[#18181c] border border-white/[0.08] font-mono">
-                  <span className="text-[11px] text-[#9ca3af] truncate">
+                  <span className="text-[11px] text-[#9ca3af] break-words leading-relaxed">
                     {sp.formulaLine}
                   </span>
                   <span
@@ -1767,12 +1769,12 @@ export default function Tab3SinusoidalSimulator({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+            <table className="w-full min-w-[740px] text-left border-collapse text-xs sm:text-sm">
               <caption className="sr-only">
                 Tabel Log Simulasi Gelombang Sinusoidal AC
               </caption>
               <thead>
-                <tr className="bg-[#101013] text-[#9ca3af] font-mono text-[11px] uppercase tracking-[0.06em] border-b border-white/[0.12]">
+                <tr className="bg-[#101013] text-[#9ca3af] font-mono text-[11px] uppercase tracking-[0.06em] border-b border-white/[0.12] whitespace-nowrap">
                   <th scope="col" className="py-3 px-3.5 text-center w-10">No</th>
                   <th scope="col" className="py-3 px-3.5">No. Soal</th>
                   <th scope="col" className="py-3 px-3.5">Besaran</th>
@@ -1798,7 +1800,7 @@ export default function Tab3SinusoidalSimulator({
                   waveformLogs.map((log, index) => (
                     <tr
                       key={log.id}
-                      className="hover:bg-white/[0.03] transition-colors"
+                      className="hover:bg-white/[0.03] transition-colors whitespace-nowrap"
                     >
                       <td className="py-3 px-3.5 font-mono tabular-nums text-center text-[#9ca3af]">
                         {index + 1}
