@@ -4,6 +4,8 @@ export interface StudentIdentity {
   nama: string;
   nim: string;
   kelas: string;
+  prodi?: string;
+  jurusan?: string;
 }
 
 export type AngleConversionMode = 'Mode A' | 'Mode B' | 'Mode C';
@@ -40,19 +42,27 @@ export interface AngleLogEntry {
 
 export type WaveFunctionType = 'sin' | 'cos';
 export type PhaseSignType = '0' | '+' | '-';
+export type ACQuantityType = 'v' | 'i';
 
 export interface SinusoidalInputParams {
+  questionLabel?: string;
+  quantityType?: ACQuantityType;
   amplitude: number;
   omegaInput: string;
   waveType: WaveFunctionType;
   phaseSign: PhaseSignType;
   phiInput: string;
+  tUjiMs?: number;
   vTarget: number;
 }
 
 export interface SinusoidalAnalyticalResult {
   isValid: boolean;
   errorMessage?: string;
+  questionLabel: string;
+  quantityType: ACQuantityType;
+  unitSymbol: 'V' | 'A';
+  quantityName: 'Tegangan' | 'Arus';
   amplitude: number;
   omegaInput: string;
   omegaRad: number;
@@ -64,6 +74,10 @@ export interface SinusoidalAnalyticalResult {
   phiDegUnsigned: number;
   phiDegSigned: number;
   phiDegFormatted: string;
+  phiDmsFormatted: string;
+  tUjiMs: number;
+  tUjiSec: number;
+  vAtTuji: number;
   vTarget: number;
   periodS: number;
   periodMs: number;
@@ -92,6 +106,8 @@ export interface WaveformPlotPoint {
 export interface WaveformLogEntry {
   id: string;
   timestamp: string;
+  questionLabel?: string;
+  quantityType?: ACQuantityType;
   amplitude: number;
   omegaInput: string;
   omegaRad: number;
@@ -101,6 +117,8 @@ export interface WaveformLogEntry {
   phiRad: number;
   phiDeg: number;
   phiFormatted: string;
+  tUjiMs?: number;
+  vAtTuji?: number;
   vTarget: number;
   periodS: number;
   periodMs: number;

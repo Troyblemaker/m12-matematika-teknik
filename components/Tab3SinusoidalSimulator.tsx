@@ -16,6 +16,7 @@ import {
   solveSinusoidal,
 } from '@/lib/math-engine';
 import {
+  ACQuantityType,
   AngleLogEntry,
   ArithmeticLogEntry,
   PhaseSignType,
@@ -72,7 +73,9 @@ export default function Tab3SinusoidalSimulator({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [hoverTimeMs, setHoverTimeMs] = useState<number | null>(null);
   const [pinnedTimeMs, setPinnedTimeMs] = useState<number | null>(null);
-  const [customTimeInput, setCustomTimeInput] = useState<string>('10');
+  const [customTimeInput, setCustomTimeInput] = useState<string>(
+    String(params.tUjiMs ?? 8)
+  );
   const [customTimeUnit, setCustomTimeUnit] = useState<'ms' | 's'>('ms');
   const [showRefWave, setShowRefWave] = useState<boolean>(true);
   const [showKeyMarkers, setShowKeyMarkers] = useState<boolean>(true);
@@ -98,6 +101,8 @@ export default function Tab3SinusoidalSimulator({
         minute: '2-digit',
         second: '2-digit',
       }),
+      questionLabel: analysis.questionLabel,
+      quantityType: analysis.quantityType,
       amplitude: analysis.amplitude,
       omegaInput: analysis.omegaInput,
       omegaRad: analysis.omegaRad,
@@ -107,6 +112,8 @@ export default function Tab3SinusoidalSimulator({
       phiRad: analysis.phiRadSigned,
       phiDeg: analysis.phiDegSigned,
       phiFormatted,
+      tUjiMs: analysis.tUjiMs,
+      vAtTuji: analysis.vAtTuji,
       vTarget: analysis.vTarget,
       periodS: analysis.periodS,
       periodMs: analysis.periodMs,
@@ -289,6 +296,10 @@ export default function Tab3SinusoidalSimulator({
     const num = Number(val.trim().replace(/,/g, '.'));
     if (Number.isFinite(num) && val.trim() !== '') {
       const tMs = unit === 's' ? num * 1000 : num;
+      onChangeParams({
+        ...params,
+        tUjiMs: Number(tMs.toFixed(3)),
+      });
       if (tMs >= 0 && tMs <= maxTimeMs) {
         setPinnedTimeMs(tMs);
       }
@@ -378,35 +389,67 @@ export default function Tab3SinusoidalSimulator({
             type="button"
             onClick={() => {
               setPinnedTimeMs(null);
+              setCustomTimeInput('8');
+              setCustomTimeUnit('ms');
               onChangeParams({
-                amplitude: 340,
-                omegaInput: '50π',
-                waveType: 'sin',
-                phaseSign: '-',
-                phiInput: '0.541',
-                vTarget: 200,
-              });
-            }}
-            className="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-xl sm:rounded-full text-xs font-mono bg-[#222227] hover:bg-[#2c2c33] text-[#f4f4f5] border border-white/[0.16] transition-colors cursor-pointer text-center"
-          >
-            Soal P12: 340 sin(50πt - 0.541)
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setPinnedTimeMs(null);
-              onChangeParams({
+                questionLabel: 'PE 118 NO 7 H.256',
+                quantityType: 'i',
                 amplitude: 5,
                 omegaInput: '100π',
                 waveType: 'sin',
                 phaseSign: '-',
                 phiInput: '0.432',
+                tUjiMs: 8,
+                vTarget: 3,
+              });
+            }}
+            className="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-xl sm:rounded-full text-xs font-mono bg-[#222227] hover:bg-[#2c2c33] text-[#f4f4f5] border border-white/[0.16] transition-colors cursor-pointer text-center"
+          >
+            PE 118 NO 7: i(t) = 5 sin(100πt - 0.432) A
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPinnedTimeMs(null);
+              setCustomTimeInput('5');
+              setCustomTimeUnit('ms');
+              onChangeParams({
+                questionLabel: 'Problem 10 H.255',
+                quantityType: 'i',
+                amplitude: 30,
+                omegaInput: '100π',
+                waveType: 'sin',
+                phaseSign: '+',
+                phiInput: '0.35',
+                tUjiMs: 5,
+                vTarget: 15,
+              });
+            }}
+            className="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-xl sm:rounded-full text-xs font-mono bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer text-center"
+          >
+            Problem 10: i(t) = 30 sin(100πt + 0.35) A
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPinnedTimeMs(null);
+              setCustomTimeInput('10');
+              setCustomTimeUnit('ms');
+              onChangeParams({
+                questionLabel: 'Problem 12 H.255',
+                quantityType: 'v',
+                amplitude: 340,
+                omegaInput: '50π',
+                waveType: 'sin',
+                phaseSign: '-',
+                phiInput: '0.541',
+                tUjiMs: 10,
                 vTarget: 200,
               });
             }}
             className="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-xl sm:rounded-full text-xs font-mono bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer text-center"
           >
-            Contoh Modul: 5 sin(100πt - 0.432)
+            Problem 12: v(t) = 340 sin(50πt - 0.541) V
           </button>
         </div>
       </div>
@@ -1198,13 +1241,61 @@ export default function Tab3SinusoidalSimulator({
             </span>
           </div>
 
-          {/* 1. Amplitudo A (Volt) */}
+          {/* 0. No. / Ket. Soal & Besaran AC */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label
+                htmlFor="sim-question-label"
+                className="block text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] mb-1.5"
+              >
+                No. / Ket. Soal
+              </label>
+              <input
+                id="sim-question-label"
+                type="text"
+                value={params.questionLabel ?? 'PE 118 NO 7 H.256'}
+                onChange={(e) =>
+                  onChangeParams({
+                    ...params,
+                    questionLabel: e.target.value,
+                  })
+                }
+                placeholder="PE 118 NO 7 H.256"
+                className="cafe-input w-full px-3.5 py-2 text-base sm:text-sm font-mono rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="sim-quantity-type"
+                className="block text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] mb-1.5"
+              >
+                Besaran AC
+              </label>
+              <select
+                id="sim-quantity-type"
+                value={params.quantityType ?? 'v'}
+                onChange={(e) =>
+                  onChangeParams({
+                    ...params,
+                    quantityType: e.target.value as ACQuantityType,
+                  })
+                }
+                className="cafe-input w-full px-3.5 py-2 text-base sm:text-sm font-mono rounded-xl"
+              >
+                <option value="i">Arus — i(t) [Ampere]</option>
+                <option value="v">Tegangan — v(t) [Volt]</option>
+              </select>
+            </div>
+          </div>
+
+          {/* 1. Amplitudo A (Volt / Ampere) */}
           <div>
             <label
               htmlFor="sim-amplitude"
               className="block text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] mb-1.5"
             >
-              Amplitudo Puncak A (Volt)
+              Amplitudo Puncak A ({analysis.unitSymbol === 'A' ? 'Ampere' : 'Volt'})
             </label>
             <input
               id="sim-amplitude"
@@ -1362,28 +1453,57 @@ export default function Tab3SinusoidalSimulator({
             </div>
           </div>
 
-          {/* 5. Target Tegangan V_target (V) */}
-          <div className="pt-2 border-t border-white/[0.12]">
-            <label
-              htmlFor="sim-vtarget"
-              className="block text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] mb-1.5"
-            >
-              Target Tegangan V_target (Volt) untuk Soal (d)
-            </label>
-            <input
-              id="sim-vtarget"
-              type="number"
-              step="any"
-              value={params.vTarget}
-              onChange={(e) =>
-                onChangeParams({
-                  ...params,
-                  vTarget: Number(e.target.value),
-                })
-              }
-              placeholder="200"
-              className="cafe-input w-full px-3.5 py-2 text-sm font-mono tabular-nums rounded-xl"
-            />
+          {/* 5. Waktu Uji t_uji (ms) [c] & Target Tegangan/Arus [d] */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/[0.12]">
+            <div>
+              <label
+                htmlFor="sim-tuji"
+                className="block text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] mb-1.5"
+              >
+                Waktu Uji t_uji (ms) [Poin c]
+              </label>
+              <input
+                id="sim-tuji"
+                type="number"
+                step="any"
+                min="0"
+                value={params.tUjiMs ?? 10}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setCustomTimeInput(e.target.value);
+                  setCustomTimeUnit('ms');
+                  onChangeParams({
+                    ...params,
+                    tUjiMs: val,
+                  });
+                }}
+                placeholder="8"
+                className="cafe-input w-full px-3.5 py-2 text-base sm:text-sm font-mono tabular-nums rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="sim-vtarget"
+                className="block text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] mb-1.5"
+              >
+                Target {analysis.quantityType === 'i' ? 'i_target (A)' : 'v_target (V)'} [Poin d]
+              </label>
+              <input
+                id="sim-vtarget"
+                type="number"
+                step="any"
+                value={params.vTarget}
+                onChange={(e) =>
+                  onChangeParams({
+                    ...params,
+                    vTarget: Number(e.target.value),
+                  })
+                }
+                placeholder="3"
+                className="cafe-input w-full px-3.5 py-2 text-base sm:text-sm font-mono tabular-nums rounded-xl"
+              />
+            </div>
           </div>
 
           <button
@@ -1606,20 +1726,22 @@ export default function Tab3SinusoidalSimulator({
               </caption>
               <thead>
                 <tr className="bg-[#101013] text-[#9ca3af] font-mono text-[11px] uppercase tracking-[0.06em] border-b border-white/[0.12]">
-                  <th scope="col" className="py-3 px-4 text-center w-12">No</th>
-                  <th scope="col" className="py-3 px-4">A (V)</th>
-                  <th scope="col" className="py-3 px-4">ω (rad/s)</th>
-                  <th scope="col" className="py-3 px-4">φ (rad/°)</th>
-                  <th scope="col" className="py-3 px-4">Persamaan v(t)/i(t)</th>
-                  <th scope="col" className="py-3 px-4">Jenis Fase</th>
-                  <th scope="col" className="py-3 px-4 text-center print:hidden">Aksi</th>
+                  <th scope="col" className="py-3 px-3.5 text-center w-10">No</th>
+                  <th scope="col" className="py-3 px-3.5">No. Soal</th>
+                  <th scope="col" className="py-3 px-3.5">Besaran</th>
+                  <th scope="col" className="py-3 px-3.5">Amplitudo (A)</th>
+                  <th scope="col" className="py-3 px-3.5">ω (rad/s)</th>
+                  <th scope="col" className="py-3 px-3.5">φ (rad/°)</th>
+                  <th scope="col" className="py-3 px-3.5">Persamaan v(t)/i(t)</th>
+                  <th scope="col" className="py-3 px-3.5">Jenis Fase</th>
+                  <th scope="col" className="py-3 px-3.5 text-center print:hidden">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.08]">
                 {waveformLogs.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={9}
                       className="py-10 px-4 text-center text-[#9ca3af] font-mono text-xs"
                     >
                       Belum ada data simulasi gelombang disimpan. Klik tombol &quot;Save Hasil Percobaan&quot; untuk menambahkan baris.
@@ -1631,25 +1753,31 @@ export default function Tab3SinusoidalSimulator({
                       key={log.id}
                       className="hover:bg-white/[0.03] transition-colors"
                     >
-                      <td className="py-3 px-4 font-mono tabular-nums text-center text-[#9ca3af]">
+                      <td className="py-3 px-3.5 font-mono tabular-nums text-center text-[#9ca3af]">
                         {index + 1}
                       </td>
-                      <td className="py-3 px-4 font-mono tabular-nums font-bold text-[#f4f4f5]">
-                        {log.amplitude} V
+                      <td className="py-3 px-3.5 font-mono text-xs text-[#f4f4f5]">
+                        {log.questionLabel || 'Soal Praktikum'}
                       </td>
-                      <td className="py-3 px-4 font-mono tabular-nums text-[#c4c9cf]">
-                        {log.omegaInput} ({log.omegaRad.toFixed(2)})
+                      <td className="py-3 px-3.5 font-mono text-xs text-[#c4c9cf]">
+                        {log.quantityType === 'i' ? 'Arus (i)' : 'Tegangan (v)'}
                       </td>
-                      <td className="py-3 px-4 font-mono tabular-nums text-[#f4f4f5]">
+                      <td className="py-3 px-3.5 font-mono tabular-nums font-bold text-[#f4f4f5]">
+                        {log.amplitude} {log.quantityType === 'i' ? 'A' : 'V'}
+                      </td>
+                      <td className="py-3 px-3.5 font-mono tabular-nums text-[#c4c9cf]">
+                        {log.omegaInput}
+                      </td>
+                      <td className="py-3 px-3.5 font-mono tabular-nums text-[#f4f4f5]">
                         {log.phiFormatted}
                       </td>
-                      <td className="py-3 px-4 font-mono font-semibold text-[#35ff92]">
+                      <td className="py-3 px-3.5 font-mono font-semibold text-[#35ff92]">
                         {log.equation}
                       </td>
-                      <td className="py-3 px-4 font-mono text-xs text-[#c4c9cf]">
+                      <td className="py-3 px-3.5 font-mono text-xs text-[#c4c9cf]">
                         {log.phaseStatus}
                       </td>
-                      <td className="py-3 px-4 text-center print:hidden">
+                      <td className="py-3 px-3.5 text-center print:hidden">
                         <button
                           type="button"
                           onClick={() => onDeleteWaveformLog(log.id)}

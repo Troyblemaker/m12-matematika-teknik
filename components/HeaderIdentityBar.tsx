@@ -176,7 +176,7 @@ export default function HeaderIdentityBar({
           <div
             className={`${
               mobileIdentityOpen ? 'grid mt-3 pt-3 border-t border-white/[0.1]' : 'hidden'
-            } sm:grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 sm:mt-0 sm:pt-0 sm:border-0`}
+            } sm:grid grid-cols-1 sm:grid-cols-5 gap-2.5 sm:gap-3 sm:mt-0 sm:pt-0 sm:border-0`}
           >
             {/* Nama Input */}
             <div>
@@ -247,6 +247,46 @@ export default function HeaderIdentityBar({
                   className="cafe-input w-full pl-9 pr-3.5 py-2 text-base sm:text-sm font-mono rounded-xl placeholder-[#9ca3af]/50 print:bg-white print:text-black print:border-zinc-400"
                 />
               </div>
+            </div>
+
+            {/* Program Studi (Prodi) Input */}
+            <div>
+              <label
+                htmlFor="student-prodi"
+                className="block text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] mb-1 print:text-zinc-600"
+              >
+                Program Studi (Prodi)
+              </label>
+              <input
+                id="student-prodi"
+                type="text"
+                value={student.prodi ?? 'D3 Teknik Elektronika'}
+                onChange={(e) =>
+                  onUpdateStudent({ ...student, prodi: e.target.value })
+                }
+                placeholder="D3 Teknik Elektronika"
+                className="cafe-input w-full px-3.5 py-2 text-base sm:text-sm rounded-xl placeholder-[#9ca3af]/50 print:bg-white print:text-black print:border-zinc-400"
+              />
+            </div>
+
+            {/* Jurusan Input */}
+            <div>
+              <label
+                htmlFor="student-jurusan"
+                className="block text-[10px] font-mono uppercase tracking-[0.08em] text-[#9ca3af] mb-1 print:text-zinc-600"
+              >
+                Jurusan
+              </label>
+              <input
+                id="student-jurusan"
+                type="text"
+                value={student.jurusan ?? 'Teknik Elektro'}
+                onChange={(e) =>
+                  onUpdateStudent({ ...student, jurusan: e.target.value })
+                }
+                placeholder="Teknik Elektro"
+                className="cafe-input w-full px-3.5 py-2 text-base sm:text-sm rounded-xl placeholder-[#9ca3af]/50 print:bg-white print:text-black print:border-zinc-400"
+              />
             </div>
           </div>
         </div>

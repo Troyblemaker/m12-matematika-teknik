@@ -800,13 +800,30 @@ export function evaluateWaveAt(
  * Solves all analytical parameters (a) through (e) for the AC Sinusoidal Waveform Simulator
  */
 export function solveSinusoidal(params: SinusoidalInputParams): SinusoidalAnalyticalResult {
-  const { amplitude, omegaInput, waveType, phaseSign, phiInput, vTarget } = params;
+  const {
+    amplitude,
+    omegaInput,
+    waveType,
+    phaseSign,
+    phiInput,
+    vTarget,
+    questionLabel = 'PE 118 NO 7 H.256',
+    quantityType = 'v',
+    tUjiMs = 10,
+  } = params;
+
+  const unitSymbol: 'V' | 'A' = quantityType === 'i' ? 'A' : 'V';
+  const quantityName: 'Tegangan' | 'Arus' = quantityType === 'i' ? 'Arus' : 'Tegangan';
+  const varName = quantityType === 'i' ? 'i' : 'v';
 
   const omegaRad = parseSymbolicPi(omegaInput);
   const parsedPhi = phaseSign === '0' ? 0 : parseSymbolicPi(phiInput);
 
   if (!Number.isFinite(amplitude) || amplitude <= 0) {
-    return createInvalidResult(params, 'Amplitudo (A) harus lebih besar dari 0 V.');
+    return createInvalidResult(
+      params,
+      `Amplitudo (A) harus lebih besar dari 0 ${unitSymbol}.`
+    );
   }
 
   if (!Number.isFinite(omegaRad) || omegaRad <= 0) {
@@ -832,12 +849,16 @@ export function solveSinusoidal(params: SinusoidalInputParams): SinusoidalAnalyt
   const phiDegUnsigned = phiRadUnsigned * (180 / Math.PI);
   const phiDegSigned = phiRadSigned * (180 / Math.PI);
   const phiDegFormatted = `${phiDegUnsigned.toFixed(2)}°`;
+  const phiDmsFormatted = extractDMS(phiDegSigned).formatted;
 
-  // (b) v saat t = 0
+  // (b) Nilai saat t = 0
   const vAtZero = evaluateWaveAt(amplitude, omegaRad, phiRadSigned, waveType, 0);
 
-  // (c) v saat t = 10 ms (0.01 s)
+  // (c) Nilai saat t = 10 ms (0.01 s) & saat t = tUjiMs
   const vAt10ms = evaluateWaveAt(amplitude, omegaRad, phiRadSigned, waveType, 0.01);
+  const validTujiMs = Number.isFinite(tUjiMs) && tUjiMs >= 0 ? tUjiMs : 10;
+  const tUjiSec = validTujiMs / 1000;
+  const vAtTuji = evaluateWaveAt(amplitude, omegaRad, phiRadSigned, waveType, tUjiSec);
 
   // (d) t saat v = V_target pertama (t >= 0)
   const targetExceedsAmplitude = Math.abs(vTarget) > amplitude;
@@ -873,23 +894,27 @@ export function solveSinusoidal(params: SinusoidalInputParams): SinusoidalAnalyt
   const cleanOmega = omegaInput.trim().replace(/\s+/g, '');
   const cleanPhi = phiInput.trim().replace(/^[+-]/, '').trim();
 
-  let equation = `v(t) = ${amplitude} ${fnName}(${cleanOmega}t) V`;
+  let equation = `${varName}(t) = ${amplitude} ${fnName}(${cleanOmega}t) ${unitSymbol}`;
   let phaseStatusLabel: 'LEADING (MENDAHULUI)' | 'IN PHASE (SEFASE)' | 'LAGGING (TERTINGGAL)' =
     'IN PHASE (SEFASE)';
   let phaseStatusBanner = 'IN PHASE (SEFASE) — Beda Fase 0.00°';
 
   if (phaseSign === '+' && phiRadUnsigned > 1e-12) {
-    equation = `v(t) = ${amplitude} ${fnName}(${cleanOmega}t + ${cleanPhi}) V`;
+    equation = `${varName}(t) = ${amplitude} ${fnName}(${cleanOmega}t + ${cleanPhi}) ${unitSymbol}`;
     phaseStatusLabel = 'LEADING (MENDAHULUI)';
     phaseStatusBanner = `LEADING (MENDAHULUI) +${phiDegUnsigned.toFixed(2)}°`;
   } else if (phaseSign === '-' && phiRadUnsigned > 1e-12) {
-    equation = `v(t) = ${amplitude} ${fnName}(${cleanOmega}t - ${cleanPhi}) V`;
+    equation = `${varName}(t) = ${amplitude} ${fnName}(${cleanOmega}t - ${cleanPhi}) ${unitSymbol}`;
     phaseStatusLabel = 'LAGGING (TERTINGGAL)';
     phaseStatusBanner = `LAGGING (TERTINGGAL) -${phiDegUnsigned.toFixed(2)}°`;
   }
 
   return {
     isValid: true,
+    questionLabel,
+    quantityType,
+    unitSymbol,
+    quantityName,
     amplitude,
     omegaInput,
     omegaRad,
@@ -901,6 +926,10 @@ export function solveSinusoidal(params: SinusoidalInputParams): SinusoidalAnalyt
     phiDegUnsigned,
     phiDegSigned,
     phiDegFormatted,
+    phiDmsFormatted,
+    tUjiMs: validTujiMs,
+    tUjiSec,
+    vAtTuji,
     vTarget,
     periodS,
     periodMs,
@@ -924,9 +953,18 @@ function createInvalidResult(
   params: SinusoidalInputParams,
   errorMessage: string
 ): SinusoidalAnalyticalResult {
+  const quantityType = params.quantityType ?? 'v';
+  const unitSymbol: 'V' | 'A' = quantityType === 'i' ? 'A' : 'V';
+  const quantityName: 'Tegangan' | 'Arus' = quantityType === 'i' ? 'Arus' : 'Tegangan';
+  const validTujiMs = Number.isFinite(params.tUjiMs) ? Number(params.tUjiMs) : 10;
+
   return {
     isValid: false,
     errorMessage,
+    questionLabel: params.questionLabel ?? '-',
+    quantityType,
+    unitSymbol,
+    quantityName,
     amplitude: params.amplitude || 0,
     omegaInput: params.omegaInput,
     omegaRad: 0,
@@ -938,6 +976,10 @@ function createInvalidResult(
     phiDegUnsigned: 0,
     phiDegSigned: 0,
     phiDegFormatted: '0.00°',
+    phiDmsFormatted: `0° 0' 0.00"`,
+    tUjiMs: validTujiMs,
+    tUjiSec: validTujiMs / 1000,
+    vAtTuji: 0,
     vTarget: params.vTarget || 0,
     periodS: 0,
     periodMs: 0,

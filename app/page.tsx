@@ -26,15 +26,20 @@ const DEFAULT_STUDENT: StudentIdentity = {
   nama: '',
   nim: '',
   kelas: '',
+  prodi: 'D3 Teknik Elektronika',
+  jurusan: 'Teknik Elektro',
 };
 
 const DEFAULT_SINUSOIDAL_PARAMS: SinusoidalInputParams = {
-  amplitude: 340,
-  omegaInput: '50π',
+  questionLabel: 'PE 118 NO 7 H.256',
+  quantityType: 'i',
+  amplitude: 5,
+  omegaInput: '100π',
   waveType: 'sin',
   phaseSign: '-',
-  phiInput: '0.541',
-  vTarget: 200,
+  phiInput: '0.432',
+  tUjiMs: 8,
+  vTarget: 3,
 };
 
 export default function M12DashboardPage() {
