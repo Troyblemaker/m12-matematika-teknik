@@ -597,21 +597,64 @@ export function evaluateArithmetic(
 
 /**
  * Parses symbolic π strings (e.g., "3π/4", "pi/6", "-pi/3", "2*pi", "100π", "0.541")
+ * into a full 50-digit Decimal without premature rounding.
+ */
+function parseSymbolicPiDecimal(input: string | number): Decimal | null {
+  try {
+    if (typeof input === 'number') {
+      return Number.isFinite(input) ? new Decimal(input) : null;
+    }
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+    const tokens = tokenizeExpression(trimmed);
+    const val = parseTokensToDecimal(tokens, 'RAD', new Decimal(0));
+    return val.isFinite() ? val : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Positive Euclidean modulo 2π at 50-digit Decimal precision.
+ */
+function positiveModulo2PiDecimal(x: Decimal): Decimal {
+  const twoPi = DECIMAL_PI.times(2);
+  let mod = x.mod(twoPi);
+  if (mod.isNegative()) {
+    mod = mod.plus(twoPi);
+  }
+  if (mod.minus(twoPi).abs().lessThan('1e-18') || mod.abs().lessThan('1e-18')) {
+    return new Decimal(0);
+  }
+  return mod;
+}
+
+/**
+ * Formats a Decimal to exactly 11 decimal places (normalizing -0 to 0).
+ */
+function fmtDec11(val: Decimal): string {
+  const rounded = val.toDecimalPlaces(11, Decimal.ROUND_HALF_UP);
+  if (rounded.isZero()) return '0.00000000000';
+  return rounded.toFixed(11);
+}
+
+/**
+ * Formats a Decimal to up to 11 decimal places (keeping exact short values clean like 0.02 or 50,
+ * while retaining full 11-decimal precision for non-terminating values).
+ */
+function fmtDecTrim11(val: Decimal): string {
+  const rounded = val.toDecimalPlaces(11, Decimal.ROUND_HALF_UP);
+  if (rounded.isZero()) return '0';
+  return rounded.toFixed();
+}
+
+/**
+ * Parses symbolic π strings (e.g., "3π/4", "pi/6", "-pi/3", "2*pi", "100π", "0.541")
  * into an exact JavaScript number.
  */
 export function parseSymbolicPi(input: string | number): number {
-  if (typeof input === 'number') {
-    return input;
-  }
-  const trimmed = input.trim();
-  if (!trimmed) {
-    return NaN;
-  }
-  const evaluated = evaluateArithmetic(trimmed, 'RAD');
-  if (!evaluated.isValid) {
-    return NaN;
-  }
-  return evaluated.numericValue;
+  const dec = parseSymbolicPiDecimal(input);
+  return dec ? dec.toNumber() : NaN;
 }
 
 // ============================================================================
@@ -1129,6 +1172,7 @@ export function solveSubProblems(
       item,
       color: '#94a3b8',
       answerText: '-',
+      shortAnswerText: '-',
       formulaLine: 'Parameter gelombang belum valid.',
       detailSteps: [],
       plotPoint: null,
@@ -1136,11 +1180,33 @@ export function solveSubProblems(
     }));
   }
 
+  // Reconstruct exact 50-digit Decimal parameters so every analytical result is exact to 11 decimal places
+  const ampDec = new Decimal(analysis.amplitude);
+  const omegaDec =
+    parseSymbolicPiDecimal(analysis.omegaInput) ?? new Decimal(analysis.omegaRad);
+  const parsedPhiDec =
+    analysis.phaseSign === '0'
+      ? new Decimal(0)
+      : (parseSymbolicPiDecimal(analysis.phiInput) ?? new Decimal(analysis.phiRadUnsigned)).abs();
+  const phiSignedDec =
+    analysis.phaseSign === '0'
+      ? new Decimal(0)
+      : analysis.phaseSign === '+'
+      ? parsedPhiDec
+      : parsedPhiDec.neg();
+  const twoPiDec = DECIMAL_PI.times(2);
+  const halfPiDec = DECIMAL_PI.dividedBy(2);
+  const threeHalfPiDec = DECIMAL_PI.times(3).dividedBy(2);
+  const periodSDec = twoPiDec.dividedBy(omegaDec);
+  const periodMsDec = periodSDec.times(1000);
+  const freqHzDec = new Decimal(1).dividedBy(periodSDec);
+  const phiDegSignedDec = phiSignedDec.times(180).dividedBy(DECIMAL_PI);
+
   const varName = analysis.quantityType === 'i' ? 'i' : 'v';
   const unit = analysis.unitSymbol;
   const phiSign = analysis.phiRadSigned >= 0 ? '+' : '-';
-  const absPhiStr = analysis.phiRadUnsigned.toFixed(3);
-  const omegaStr = analysis.omegaRad.toFixed(2);
+  const absPhiStr = fmtDecTrim11(parsedPhiDec);
+  const omegaStrShort = omegaDec.toFixed(4);
   let plotColorIdx = 0;
 
   return items.map((item) => {
@@ -1151,16 +1217,21 @@ export function solveSubProblems(
           : analysis.phaseSign === '-' && analysis.phiRadUnsigned > 1e-12
           ? 'Lagging'
           : 'In Phase';
+      const periodSStr = fmtDecTrim11(periodSDec);
+      const periodMsStr = fmtDecTrim11(periodMsDec);
+      const freqStr = fmtDecTrim11(freqHzDec);
+      const phiDeg11 = fmtDec11(phiDegSignedDec);
       return {
         item,
         color: '#22d3ee',
-        answerText: `T = ${analysis.periodS.toFixed(4)} s (${analysis.periodMs.toFixed(2)} ms) | f = ${analysis.frequencyHz.toFixed(2)} Hz | φ = ${analysis.phiDegSigned.toFixed(2)}° (${analysis.phiDmsFormatted}) (${shortPhase})`,
-        formulaLine: `T = 2π/ω, f = 1/T, φ = ${analysis.phiRadSigned.toFixed(3)} × 180°/π`,
+        answerText: `T = ${periodSStr} s (${periodMsStr} ms) | f = ${freqStr} Hz | φ = ${phiDeg11}° (${analysis.phiDmsFormatted}) (${shortPhase})`,
+        shortAnswerText: `T = ${periodMsDec.toFixed(2)} ms | f = ${freqHzDec.toFixed(2)} Hz | φ = ${phiDegSignedDec.toFixed(2)}°`,
+        formulaLine: `T = 2π/ω, f = 1/T, φ = ${fmtDecTrim11(phiSignedDec)} × 180°/π`,
         detailSteps: [
-          `ω = ${analysis.omegaInput} = ${omegaStr} rad/s`,
-          `T = 2π / ${analysis.omegaInput} = ${analysis.periodS.toFixed(4)} s (${analysis.periodMs.toFixed(2)} ms)`,
-          `f = 1 / ${analysis.periodS.toFixed(4)} = ${analysis.frequencyHz.toFixed(2)} Hz`,
-          `φ = ${analysis.phiRadSigned.toFixed(3)} × (180° / π) = ${analysis.phiDegSigned.toFixed(2)}° (${analysis.phiDmsFormatted})`,
+          `ω = ${analysis.omegaInput} = ${fmtDec11(omegaDec)} rad/s`,
+          `T = 2π / ${analysis.omegaInput} = ${periodSStr} s (${periodMsStr} ms)`,
+          `f = 1 / T = ${freqStr} Hz`,
+          `φ = ${fmtDecTrim11(phiSignedDec)} × (180° / π) = ${phiDeg11}° (${analysis.phiDmsFormatted})`,
         ],
         plotPoint: null,
       };
@@ -1171,24 +1242,25 @@ export function solveSubProblems(
 
     if (item.type === 'value_at_time') {
       const tMs = Number.isFinite(item.timeValueMs) ? Number(item.timeValueMs) : 0;
-      const tSec = tMs / 1000;
-      const totalRad = analysis.omegaRad * tSec + analysis.phiRadSigned;
-      const yVal = evaluateWaveAt(
-        analysis.amplitude,
-        analysis.omegaRad,
-        analysis.phiRadSigned,
-        analysis.waveType,
-        tSec
-      );
+      const tMsDec = new Decimal(tMs);
+      const tSecDec = tMsDec.dividedBy(1000);
+      const totalRadDec = omegaDec.times(tSecDec).plus(phiSignedDec);
+      const yDec =
+        analysis.waveType === 'cos'
+          ? ampDec.times(Decimal.cos(totalRadDec))
+          : ampDec.times(Decimal.sin(totalRadDec));
+      const yVal = yDec.toNumber();
+      const y11 = fmtDec11(yDec);
       return {
         item,
         color,
-        answerText: `${yVal.toFixed(3)} ${unit}`,
-        formulaLine: `${varName}(${tSec.toFixed(4)}) = ${analysis.amplitude} ${analysis.waveType}(${totalRad.toFixed(4)} rad)`,
+        answerText: `${y11} ${unit}`,
+        shortAnswerText: `${yDec.toFixed(3)} ${unit}`,
+        formulaLine: `${varName}(${fmtDecTrim11(tSecDec)}) = ${analysis.amplitude} ${analysis.waveType}(${fmtDec11(totalRadDec)} rad)`,
         detailSteps: [
-          `${varName}(${tSec.toFixed(4)}) = ${analysis.amplitude} ${analysis.waveType}(${omegaStr} × ${tSec.toFixed(4)} ${phiSign} ${absPhiStr})`,
-          `= ${analysis.amplitude} ${analysis.waveType}(${totalRad.toFixed(4)} rad)`,
-          `= ${yVal.toFixed(3)} ${unit}`,
+          `${varName}(${fmtDecTrim11(tSecDec)}) = ${analysis.amplitude} ${analysis.waveType}(${omegaStrShort} × ${fmtDecTrim11(tSecDec)} ${phiSign} ${absPhiStr})`,
+          `= ${analysis.amplitude} ${analysis.waveType}(${fmtDec11(totalRadDec)} rad)`,
+          `= ${y11} ${unit}`,
         ],
         plotPoint: {
           tMs,
@@ -1209,6 +1281,7 @@ export function solveSubProblems(
           item,
           color,
           answerText: `Melebihi Amplitudo (|${target}| > ${analysis.amplitude} ${unit})`,
+          shortAnswerText: `>|A|`,
           formulaLine: `|Target| > Amplitudo A (${analysis.amplitude} ${unit})`,
           detailSteps: [
             `Target ${target} ${unit} berada di luar rentang [-${analysis.amplitude}, +${analysis.amplitude}] ${unit}.`,
@@ -1218,121 +1291,141 @@ export function solveSubProblems(
         };
       }
 
-      const ratio = Math.max(-1, Math.min(1, target / analysis.amplitude));
-      let invRad: number;
-      let theta1: number;
-      let theta2: number;
+      const targetDec = new Decimal(target);
+      const ratioDec = Decimal.max(-1, Decimal.min(1, targetDec.dividedBy(ampDec)));
+      let invRadDec: Decimal;
+      let theta1Dec: Decimal;
+      let theta2Dec: Decimal;
       if (analysis.waveType === 'sin') {
-        invRad = Math.asin(ratio);
-        theta1 = positiveModulo2Pi(invRad - analysis.phiRadSigned);
-        theta2 = positiveModulo2Pi(Math.PI - invRad - analysis.phiRadSigned);
+        invRadDec = Decimal.asin(ratioDec);
+        theta1Dec = positiveModulo2PiDecimal(invRadDec.minus(phiSignedDec));
+        theta2Dec = positiveModulo2PiDecimal(DECIMAL_PI.minus(invRadDec).minus(phiSignedDec));
       } else {
-        invRad = Math.acos(ratio);
-        theta1 = positiveModulo2Pi(invRad - analysis.phiRadSigned);
-        theta2 = positiveModulo2Pi(-invRad - analysis.phiRadSigned);
+        invRadDec = Decimal.acos(ratioDec);
+        theta1Dec = positiveModulo2PiDecimal(invRadDec.minus(phiSignedDec));
+        theta2Dec = positiveModulo2PiDecimal(invRadDec.neg().minus(phiSignedDec));
       }
-      const minTheta = Math.min(theta1, theta2);
-      const tSec = minTheta / analysis.omegaRad;
-      const tMs = tSec * 1000;
+      const minThetaDec = Decimal.min(theta1Dec, theta2Dec);
+      const tSecDec = minThetaDec.dividedBy(omegaDec);
+      const tMsDec = tSecDec.times(1000);
+      const tMs = tMsDec.toNumber();
+      const tMs11 = fmtDec11(tMsDec);
+      const tSec11 = fmtDec11(tSecDec);
 
       return {
         item,
         color,
-        answerText: `${tMs.toFixed(3)} ms`,
-        formulaLine: `t = (${minTheta.toFixed(4)}) / ${omegaStr} = ${tMs.toFixed(3)} ms`,
+        answerText: `${tMs11} ms (${tSec11} s)`,
+        shortAnswerText: `${tMsDec.toFixed(3)} ms`,
+        formulaLine: `t = ${fmtDec11(minThetaDec)} / ${omegaStrShort}`,
         detailSteps: [
-          `${analysis.waveType}(${omegaStr}t ${phiSign} ${absPhiStr}) = ${target} / ${analysis.amplitude} = ${ratio.toFixed(4)}`,
-          `arc${analysis.waveType}(${ratio.toFixed(4)}) = ${invRad.toFixed(4)} rad → θ_min = ${minTheta.toFixed(4)} rad`,
-          `t = ${minTheta.toFixed(4)} / ${omegaStr} = ${tSec.toFixed(6)} s = ${tMs.toFixed(3)} ms`,
+          `${analysis.waveType}(${analysis.omegaInput}t ${phiSign} ${absPhiStr}) = ${target} / ${analysis.amplitude} = ${fmtDecTrim11(ratioDec)}`,
+          `arc${analysis.waveType}(${fmtDecTrim11(ratioDec)}) = ${fmtDec11(invRadDec)} rad → θ_min = ${fmtDec11(minThetaDec)} rad`,
+          `t = ${tSec11} s = ${tMs11} ms`,
         ],
         plotPoint: {
           tMs,
           yVal: target,
           yLabel: target.toFixed(1),
           xLabel: `↑ ${tMs.toFixed(3)}`,
-          shortBadge: `(${item.label}) ${tMs.toFixed(3)} ms (${target}${unit})`,
+          shortBadge: `(${item.label}) ${tMs.toFixed(2)} ms (${target}${unit})`,
         },
       };
     }
 
     if (item.type === 'time_at_max') {
-      const peakAngle = analysis.waveType === 'cos' ? 0 : Math.PI / 2;
-      const thetaMax = positiveModulo2Pi(peakAngle - analysis.phiRadSigned);
-      const tSec = thetaMax / analysis.omegaRad;
-      const tMs = tSec * 1000;
+      const peakAngleDec = analysis.waveType === 'cos' ? new Decimal(0) : halfPiDec;
+      const thetaMaxDec = positiveModulo2PiDecimal(peakAngleDec.minus(phiSignedDec));
+      const tSecDec = thetaMaxDec.dividedBy(omegaDec);
+      const tMsDec = tSecDec.times(1000);
+      const tMs = tMsDec.toNumber();
+      const tMs11 = fmtDec11(tMsDec);
+      const tSec11 = fmtDec11(tSecDec);
+
       return {
         item,
         color,
-        answerText: `${tMs.toFixed(3)} ms (+${analysis.amplitude} ${unit})`,
-        formulaLine: `t_max = (${peakAngle.toFixed(4)} - (${analysis.phiRadSigned.toFixed(3)})) / ${omegaStr}`,
+        answerText: `${tMs11} ms (+${analysis.amplitude} ${unit})`,
+        shortAnswerText: `${tMsDec.toFixed(3)} ms (+${analysis.amplitude} ${unit})`,
+        formulaLine: `t_max = (${analysis.waveType === 'cos' ? '0' : 'π/2'} - (${fmtDecTrim11(phiSignedDec)})) / ${analysis.omegaInput}`,
         detailSteps: [
-          `Syarat Maksimum (+A): sudut fase = ${analysis.waveType === 'cos' ? '0 rad' : 'π/2 (1.5708 rad)'}`,
-          `θ_max = (${peakAngle.toFixed(4)} - (${analysis.phiRadSigned.toFixed(3)})) mod 2π = ${thetaMax.toFixed(4)} rad`,
-          `t_max = ${thetaMax.toFixed(4)} / ${omegaStr} = ${tSec.toFixed(6)} s = ${tMs.toFixed(3)} ms`,
+          `Syarat Maksimum (+A): sudut fase = ${analysis.waveType === 'cos' ? '0 rad' : 'π/2 rad'}`,
+          `θ_max = ${fmtDec11(thetaMaxDec)} rad`,
+          `t_max = ${tSec11} s = ${tMs11} ms`,
         ],
         plotPoint: {
           tMs,
           yVal: analysis.amplitude,
           yLabel: analysis.amplitude.toFixed(1),
           xLabel: `↑ ${tMs.toFixed(3)}`,
-          shortBadge: `(${item.label}) Peak ${tMs.toFixed(3)} ms`,
+          shortBadge: `(${item.label}) Peak ${tMs.toFixed(2)} ms`,
         },
       };
     }
 
     if (item.type === 'time_at_min') {
-      const troughAngle =
-        analysis.waveType === 'cos' ? Math.PI : (3 * Math.PI) / 2;
-      const thetaMin = positiveModulo2Pi(troughAngle - analysis.phiRadSigned);
-      const tSec = thetaMin / analysis.omegaRad;
-      const tMs = tSec * 1000;
+      const troughAngleDec =
+        analysis.waveType === 'cos' ? DECIMAL_PI : threeHalfPiDec;
+      const thetaMinDec = positiveModulo2PiDecimal(troughAngleDec.minus(phiSignedDec));
+      const tSecDec = thetaMinDec.dividedBy(omegaDec);
+      const tMsDec = tSecDec.times(1000);
+      const tMs = tMsDec.toNumber();
+      const tMs11 = fmtDec11(tMsDec);
+      const tSec11 = fmtDec11(tSecDec);
+
       return {
         item,
         color,
-        answerText: `${tMs.toFixed(3)} ms (-${analysis.amplitude} ${unit})`,
-        formulaLine: `t_min = (${troughAngle.toFixed(4)} - (${analysis.phiRadSigned.toFixed(3)})) / ${omegaStr}`,
+        answerText: `${tMs11} ms (-${analysis.amplitude} ${unit})`,
+        shortAnswerText: `${tMsDec.toFixed(3)} ms (-${analysis.amplitude} ${unit})`,
+        formulaLine: `t_min = (${analysis.waveType === 'cos' ? 'π' : '3π/2'} - (${fmtDecTrim11(phiSignedDec)})) / ${analysis.omegaInput}`,
         detailSteps: [
-          `Syarat Minimum (-A): sudut fase = ${analysis.waveType === 'cos' ? 'π (3.1416 rad)' : '3π/2 (4.7124 rad)'}`,
-          `θ_min = (${troughAngle.toFixed(4)} - (${analysis.phiRadSigned.toFixed(3)})) mod 2π = ${thetaMin.toFixed(4)} rad`,
-          `t_min = ${thetaMin.toFixed(4)} / ${omegaStr} = ${tSec.toFixed(6)} s = ${tMs.toFixed(3)} ms`,
+          `Syarat Minimum (-A): sudut fase = ${analysis.waveType === 'cos' ? 'π rad' : '3π/2 rad'}`,
+          `θ_min = ${fmtDec11(thetaMinDec)} rad`,
+          `t_min = ${tSec11} s = ${tMs11} ms`,
         ],
         plotPoint: {
           tMs,
           yVal: -analysis.amplitude,
           yLabel: (-analysis.amplitude).toFixed(1),
           xLabel: `↑ ${tMs.toFixed(3)}`,
-          shortBadge: `(${item.label}) Min ${tMs.toFixed(3)} ms`,
+          shortBadge: `(${item.label}) Min ${tMs.toFixed(2)} ms`,
         },
       };
     }
 
     // 'time_at_zero': first zero crossing for t > 0
-    const zeroAngles =
+    const zeroAnglesDec =
       analysis.waveType === 'cos'
-        ? [Math.PI / 2, (3 * Math.PI) / 2]
-        : [0, Math.PI];
-    const candidates = zeroAngles.map((z) => {
-      const mod = positiveModulo2Pi(z - analysis.phiRadSigned);
-      return mod < 1e-9 ? Math.PI : mod;
+        ? [halfPiDec, threeHalfPiDec]
+        : [new Decimal(0), DECIMAL_PI];
+    const candidatesDec = zeroAnglesDec.map((z) => {
+      const mod = positiveModulo2PiDecimal(z.minus(phiSignedDec));
+      return mod.lessThan('1e-12') ? DECIMAL_PI : mod;
     });
-    const thetaZero = Math.min(...candidates);
-    const tSec = thetaZero / analysis.omegaRad;
-    const tMs = tSec * 1000;
+    const thetaZeroDec = Decimal.min(candidatesDec[0], candidatesDec[1]);
+    const tSecDec = thetaZeroDec.dividedBy(omegaDec);
+    const tMsDec = tSecDec.times(1000);
+    const tMs = tMsDec.toNumber();
+    const tMs11 = fmtDec11(tMsDec);
+    const tSec11 = fmtDec11(tSecDec);
+
     return {
       item,
       color,
-      answerText: `${tMs.toFixed(3)} ms (0 ${unit})`,
-      formulaLine: `t_zero = ${thetaZero.toFixed(4)} / ${omegaStr} = ${tMs.toFixed(3)} ms`,
+      answerText: `${tMs11} ms (0 ${unit})`,
+      shortAnswerText: `${tMsDec.toFixed(3)} ms (0 ${unit})`,
+      formulaLine: `t_zero = ${fmtDec11(thetaZeroDec)} / ${analysis.omegaInput}`,
       detailSteps: [
-        `Syarat Zero Crossing (${varName} = 0): θ = ${thetaZero.toFixed(4)} rad`,
-        `t_zero = ${thetaZero.toFixed(4)} / ${omegaStr} = ${tSec.toFixed(6)} s = ${tMs.toFixed(3)} ms`,
+        `Syarat Zero Crossing (${varName} = 0): θ = ${fmtDec11(thetaZeroDec)} rad`,
+        `t_zero = ${tSec11} s = ${tMs11} ms`,
       ],
       plotPoint: {
         tMs,
         yVal: 0,
         yLabel: '0',
         xLabel: `↑ ${tMs.toFixed(3)}`,
-        shortBadge: `(${item.label}) Zero ${tMs.toFixed(3)} ms`,
+        shortBadge: `(${item.label}) Zero ${tMs.toFixed(2)} ms`,
       },
     };
   });

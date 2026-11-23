@@ -65,6 +65,7 @@ export interface SolvedSubProblem {
   item: SubProblemItem;
   color: string;
   answerText: string;
+  shortAnswerText: string;
   formulaLine: string;
   detailSteps: string[];
   plotPoint: {

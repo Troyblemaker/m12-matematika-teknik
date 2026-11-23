@@ -819,7 +819,7 @@ export default function PrintReportSheet({
                       style={{ backgroundColor: sp.color }}
                     />
                     <span>
-                      ({sp.item.label}) <strong>{fmtCommaStr(sp.answerText)}</strong>{' '}
+                      ({sp.item.label}) <strong>{fmtCommaStr(sp.shortAnswerText)}</strong>{' '}
                       <span className="text-slate-500">
                         @ {fmtComma(sp.plotPoint!.tMs, 2)}ms
                       </span>
@@ -848,7 +848,7 @@ export default function PrintReportSheet({
                       <div className="text-[7px] text-slate-600 font-semibold leading-tight">
                         ({sp.item.label}) {sp.item.prompt}
                       </div>
-                      <div className="font-mono font-bold text-slate-950 text-[8.5px] mt-0.5 leading-snug">
+                      <div className="font-mono font-bold text-slate-950 text-[7.6px] mt-0.5 leading-snug break-words">
                         {fmtCommaStr(sp.answerText)}
                       </div>
                     </div>
@@ -887,7 +887,7 @@ export default function PrintReportSheet({
                     <div className="text-[7px] font-extrabold text-slate-900 border-b border-slate-200 pb-0.5 truncate">
                       ({sp.item.label}) {sp.item.prompt}
                     </div>
-                    <div className="font-mono text-[6.5px] text-slate-800 space-y-0.5 leading-tight">
+                    <div className="font-mono text-[6px] text-slate-800 space-y-0.5 leading-tight break-words">
                       {sp.detailSteps.map((line, i) => (
                         <div
                           key={i}

@@ -200,12 +200,21 @@ describe('M12 Math Engine — Sinusoidal Waveform Analytical Solver', () => {
 
     expect(solved).toHaveLength(6);
     expect(solved[0].plotPoint).toBeNull();
-    expect(solved[1].plotPoint!.yVal).toBeCloseTo(-2.093, 2);
-    expect(solved[2].plotPoint!.yVal).toBeCloseTo(4.363, 2);
-    expect(solved[3].plotPoint!.tMs).toBeCloseTo(3.423, 2);
-    expect(solved[4].plotPoint!.tMs).toBeCloseTo(6.375, 2);
+    expect(solved[0].answerText).toContain('-24.75177674965°');
+    expect(solved[1].plotPoint!.yVal).toBeCloseTo(-2.09343949488, 10);
+    expect(solved[1].answerText).toBe('-2.09343949488 A');
+    expect(solved[1].shortAnswerText).toBe('-2.093 A');
+    expect(solved[2].plotPoint!.yVal).toBeCloseTo(4.36255579431, 10);
+    expect(solved[2].answerText).toBe('4.36255579431 A');
+    expect(solved[2].shortAnswerText).toBe('4.363 A');
+    expect(solved[3].plotPoint!.tMs).toBeCloseTo(3.42342635531, 10);
+    expect(solved[3].answerText).toContain('3.42342635531 ms');
+    expect(solved[3].shortAnswerText).toBe('3.423 ms');
+    expect(solved[4].plotPoint!.tMs).toBeCloseTo(6.37509870831, 10);
+    expect(solved[4].answerText).toContain('6.37509870831 ms');
     expect(solved[5].plotPoint!.yVal).toBe(-5);
-    expect(solved[5].plotPoint!.tMs).toBeCloseTo(16.375, 2);
+    expect(solved[5].plotPoint!.tMs).toBeCloseTo(16.37509870831, 10);
+    expect(solved[5].answerText).toContain('16.37509870831 ms');
   });
 });
 

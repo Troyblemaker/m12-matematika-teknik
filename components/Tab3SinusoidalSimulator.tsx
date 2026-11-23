@@ -1162,7 +1162,7 @@ export default function Tab3SinusoidalSimulator({
                     <span className="font-bold text-[#f4f4f5]">
                       ({sp.item.label})
                     </span>
-                    <span className="text-[#c4c9cf]">{sp.answerText}</span>
+                    <span className="text-[#c4c9cf]">{sp.shortAnswerText}</span>
                     <span className="text-[10px] text-[#9ca3af]">
                       @ {sp.plotPoint!.tMs.toFixed(2)}ms
                     </span>
@@ -1562,9 +1562,9 @@ export default function Tab3SinusoidalSimulator({
         </div>
 
         {/* Right Column (7 cols): DYNAMIC SUB-PROBLEM BUILDER & LIVE SOLVER */}
-        <div className="lg:col-span-7 cafe-card rounded-2xl p-4 sm:p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-white/[0.12] pb-3.5">
-            <div>
+        <div className="lg:col-span-7 cafe-card rounded-2xl p-4 sm:p-6 space-y-4 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.12] pb-3.5">
+            <div className="min-w-0">
               <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-[#9ca3af]">
                 [EDITOR SUB-SOAL &amp; HASIL ANALISIS]
               </span>
@@ -1573,22 +1573,22 @@ export default function Tab3SinusoidalSimulator({
               </h3>
             </div>
 
-            <div className="flex items-center gap-2 print:hidden">
+            <div className="flex items-center gap-2 shrink-0 print:hidden">
               <button
                 type="button"
                 onClick={handleResetSubProblems}
                 title="Reset ke default (a–e)"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono whitespace-nowrap shrink-0 bg-[#222227] hover:bg-[#2c2c33] text-[#c4c9cf] hover:text-[#f4f4f5] border border-white/[0.14] transition-colors cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3.5 h-3.5 shrink-0" />
                 <span>Reset (a–e)</span>
               </button>
               <button
                 type="button"
                 onClick={handleAddSubProblem}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#35ff92] hover:bg-[#4bff9f] text-[#171515] transition-all active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 bg-[#35ff92] hover:bg-[#4bff9f] text-[#171515] transition-all active:scale-95 cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5 shrink-0" />
                 <span>Tambah Sub-Soal</span>
               </button>
             </div>
@@ -1725,19 +1725,19 @@ export default function Tab3SinusoidalSimulator({
                   className="cafe-input w-full px-3 py-2 sm:py-1.5 text-base sm:text-xs rounded-lg placeholder-[#9ca3af]/40"
                 />
 
-                {/* Row 3: Live Computed Result & Formula Preview */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 px-3 py-2 rounded-lg bg-[#18181c] border border-white/[0.08] font-mono">
+                {/* Row 3: Live Computed Result (11-Decimal Precision) & Formula Preview */}
+                <div className="flex flex-col gap-1 px-3 py-2.5 rounded-lg bg-[#18181c] border border-white/[0.08] font-mono min-w-0 overflow-hidden">
                   <span className="text-[11px] text-[#9ca3af] break-words leading-relaxed">
                     {sp.formulaLine}
                   </span>
-                  <span
-                    className={`text-xs sm:text-sm font-bold tabular-nums shrink-0 ${
+                  <div
+                    className={`text-xs sm:text-[13px] font-bold tabular-nums break-words leading-snug ${
                       sp.isError ? 'text-red-400' : ''
                     }`}
                     style={!sp.isError ? { color: sp.color } : undefined}
                   >
                     = {sp.answerText}
-                  </span>
+                  </div>
                 </div>
               </div>
             ))}
