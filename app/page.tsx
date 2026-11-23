@@ -32,6 +32,8 @@ const DEFAULT_STUDENT: StudentIdentity = {
 
 const DEFAULT_SINUSOIDAL_PARAMS: SinusoidalInputParams = {
   questionLabel: 'PE 118 NO 7 H.256',
+  problemDetails:
+    'Diketahui arus AC i(t) = 5 sin(100πt - 0,432) A. Tentukan (a) periode, frekuensi, sudut fase, (b) arus saat t = 0, (c) arus saat t = 8 ms, (d) waktu pertama saat i = 3 A, dan (e) waktu pertama mencapai nilai maksimum.',
   quantityType: 'i',
   amplitude: 5,
   omegaInput: '100π',
@@ -40,6 +42,41 @@ const DEFAULT_SINUSOIDAL_PARAMS: SinusoidalInputParams = {
   phiInput: '0.432',
   tUjiMs: 8,
   vTarget: 3,
+  subProblems: [
+    {
+      id: 'sp-a',
+      label: 'a',
+      prompt: 'Periode (T), Frekuensi (f), dan Sudut Fase (φ)',
+      type: 'params',
+    },
+    {
+      id: 'sp-b',
+      label: 'b',
+      prompt: 'Arus i saat t = 0 ms',
+      type: 'value_at_time',
+      timeValueMs: 0,
+    },
+    {
+      id: 'sp-c',
+      label: 'c',
+      prompt: 'Arus i saat t = 8 ms',
+      type: 'value_at_time',
+      timeValueMs: 8,
+    },
+    {
+      id: 'sp-d',
+      label: 'd',
+      prompt: 'Waktu t pertama saat i = 3 A',
+      type: 'time_at_value',
+      targetValue: 3,
+    },
+    {
+      id: 'sp-e',
+      label: 'e',
+      prompt: 'Waktu t pertama saat i Maksimum (+5 A)',
+      type: 'time_at_max',
+    },
+  ],
 };
 
 export default function M12DashboardPage() {

@@ -8,6 +8,7 @@ import {
   formatRadPi,
   parseSymbolicPi,
   solveSinusoidal,
+  solveSubProblems,
 } from '@/lib/math-engine';
 
 describe('M12 Math Engine — Exact Arithmetic (Decimal.js)', () => {
@@ -174,6 +175,37 @@ describe('M12 Math Engine — Sinusoidal Waveform Analytical Solver', () => {
   it('parses symbolic π angular velocity and phase angles cleanly', () => {
     expect(parseSymbolicPi('100π')).toBeCloseTo(314.159265, 5);
     expect(parseSymbolicPi('50pi')).toBeCloseTo(157.079633, 5);
+  });
+
+  it('solves dynamic sub-problems (a)-(f) for PE 118 No 7 and generates graph plot points', () => {
+    const analysis = solveSinusoidal({
+      questionLabel: 'PE 118 NO 7 H.256',
+      quantityType: 'i',
+      amplitude: 5,
+      omegaInput: '100π',
+      waveType: 'sin',
+      phaseSign: '-',
+      phiInput: '0.432',
+      tUjiMs: 8,
+      vTarget: 3,
+    });
+    const solved = solveSubProblems(analysis, [
+      { id: 'a', label: 'a', prompt: 'Parameter Dasar', type: 'params' },
+      { id: 'b', label: 'b', prompt: 'Arus t = 0', type: 'value_at_time', timeValueMs: 0 },
+      { id: 'c', label: 'c', prompt: 'Arus t = 8 ms', type: 'value_at_time', timeValueMs: 8 },
+      { id: 'd', label: 'd', prompt: 'Waktu i = 3 A', type: 'time_at_value', targetValue: 3 },
+      { id: 'e', label: 'e', prompt: 'Waktu Maksimum', type: 'time_at_max' },
+      { id: 'f', label: 'f', prompt: 'Waktu Minimum', type: 'time_at_min' },
+    ]);
+
+    expect(solved).toHaveLength(6);
+    expect(solved[0].plotPoint).toBeNull();
+    expect(solved[1].plotPoint!.yVal).toBeCloseTo(-2.093, 2);
+    expect(solved[2].plotPoint!.yVal).toBeCloseTo(4.363, 2);
+    expect(solved[3].plotPoint!.tMs).toBeCloseTo(3.423, 2);
+    expect(solved[4].plotPoint!.tMs).toBeCloseTo(6.375, 2);
+    expect(solved[5].plotPoint!.yVal).toBe(-5);
+    expect(solved[5].plotPoint!.tMs).toBeCloseTo(16.375, 2);
   });
 });
 

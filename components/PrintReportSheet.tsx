@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { solveSinusoidal } from '@/lib/math-engine';
+import { solveSinusoidal, solveSubProblems } from '@/lib/math-engine';
 import {
   AngleLogEntry,
   ArithmeticLogEntry,
@@ -32,23 +32,6 @@ function fmtCommaStr(raw: string): string {
   return raw.replace(/\./g, ',');
 }
 
-function Frac({
-  top,
-  bottom,
-}: {
-  top: React.ReactNode;
-  bottom: React.ReactNode;
-}) {
-  return (
-    <span className="inline-flex flex-col items-center align-middle mx-1 leading-none">
-      <span className="border-b border-slate-700 px-1 pb-0.5 text-[7px]">
-        {top}
-      </span>
-      <span className="px-1 pt-0.5 text-[7px]">{bottom}</span>
-    </span>
-  );
-}
-
 export default function PrintReportSheet({
   activeTab,
   student,
@@ -62,10 +45,31 @@ export default function PrintReportSheet({
     [sinusoidalParams]
   );
 
-  // Generate 1 full cycle (plus 5% margin) with high resolution (320 points) for smooth hero curve
+  const solvedSubProblems = useMemo(
+    () => solveSubProblems(analysis, sinusoidalParams.subProblems),
+    [analysis, sinusoidalParams.subProblems]
+  );
+
+  // Dynamically size the time horizon so all user-defined sub-problem points fit cleanly on the hero graph
+  const maxTimeMs = useMemo(() => {
+    if (!analysis.isValid || analysis.periodMs <= 0) return 21;
+    const baseMax = 1.05 * analysis.periodMs;
+    const maxPtT = solvedSubProblems.reduce((acc, sp) => {
+      if (sp.plotPoint && sp.plotPoint.tMs > acc) {
+        return sp.plotPoint.tMs;
+      }
+      return acc;
+    }, 0);
+    if (maxPtT > baseMax && maxPtT <= analysis.periodMs * 3.5) {
+      return maxPtT * 1.08;
+    }
+    return baseMax;
+  }, [analysis, solvedSubProblems]);
+
+  // Generate high-resolution waveform points across [0, maxTimeMs]
   const oneCyclePoints = useMemo(() => {
     if (!analysis.isValid || analysis.periodS <= 0) return [];
-    const maxSec = 1.05 * analysis.periodS;
+    const maxSec = maxTimeMs / 1000;
     const steps = 320;
     const pts: { tMs: number; vRef: number; vMeasured: number }[] = [];
     for (let i = 0; i <= steps; i++) {
@@ -84,7 +88,7 @@ export default function PrintReportSheet({
       pts.push({ tMs, vRef, vMeasured });
     }
     return pts;
-  }, [analysis]);
+  }, [analysis, maxTimeMs]);
 
   const modeCounts = useMemo(() => {
     const a = angleLogs.filter((l) => l.mode === 'Mode A').length;
@@ -105,7 +109,6 @@ export default function PrintReportSheet({
   const innerW = svgW - padL - padR;
   const innerH = svgH - padT - padB;
 
-  const maxTimeMs = analysis.isValid ? 1.05 * analysis.periodMs : 21;
   const yLimit = analysis.isValid ? 1.24 * analysis.amplitude : 6;
 
   const mapX = (tMs: number) =>
@@ -146,7 +149,6 @@ export default function PrintReportSheet({
 
   const varName = analysis.quantityType === 'i' ? 'i' : 'v';
   const unitSymbol = analysis.unitSymbol;
-  const unitFullName = analysis.quantityType === 'i' ? 'Ampere' : 'Volt';
   const quantityName = analysis.quantityName;
 
   const shortPhaseName =
@@ -155,13 +157,6 @@ export default function PrintReportSheet({
       : analysis.phaseSign === '-' && analysis.phiRadUnsigned > 1e-12
       ? 'Lagging'
       : 'In Phase';
-
-  const signSelectLabel =
-    analysis.phaseSign === '-'
-      ? 'Minus (-) → Lagging'
-      : analysis.phaseSign === '+'
-      ? 'Plus (+) → Leading'
-      : 'Nol (0) → In Phase';
 
   const statusNarrative =
     analysis.phaseSign === '-' && analysis.phiRadUnsigned > 1e-12
@@ -172,75 +167,62 @@ export default function PrintReportSheet({
 
   const displayEquationComma = fmtCommaStr(analysis.equation);
 
-  // De-collide Y-axis dynamic labels so they never overlap with +A, 0, -A or each other
-  const yAxisDynamicLabels = useMemo(() => {
+  // Plottable sub-problems with anti-overlap Y-axis and X-axis coordinates
+  const plottablePoints = useMemo(() => {
     if (!analysis.isValid) return [];
-    const fixedYs = [
-      mapY(analysis.amplitude),
-      zeroY,
-      mapY(-analysis.amplitude),
-    ];
-    const items: {
-      id: string;
-      val: number;
-      rawY: number;
-      adjY: number;
-      text: string;
-      color: string;
-    }[] = [
-      {
-        id: 'v0',
-        val: analysis.vAtZero,
-        rawY: mapY(analysis.vAtZero),
-        adjY: mapY(analysis.vAtZero),
-        text: fmtComma(analysis.vAtZero, 1),
-        color: '#fbbf24', // amber-400
-      },
-    ];
+    const fixedYs = [mapY(analysis.amplitude), zeroY, mapY(-analysis.amplitude)];
+    const rawList = solvedSubProblems
+      .filter((sp) => sp.plotPoint !== null && sp.plotPoint.tMs >= 0 && sp.plotPoint.tMs <= maxTimeMs)
+      .map((sp) => ({
+        ...sp,
+        x: mapX(sp.plotPoint!.tMs),
+        y: mapY(sp.plotPoint!.yVal),
+        adjYLabel: mapY(sp.plotPoint!.yVal),
+        xTier: 0,
+      }));
 
-    if (
-      analysis.tAtTargetMs !== null &&
-      analysis.tAtTargetMs <= maxTimeMs &&
-      Math.abs(analysis.vTarget) <= analysis.amplitude
-    ) {
-      items.push({
-        id: 'vtarget',
-        val: analysis.vTarget,
-        rawY: mapY(analysis.vTarget),
-        adjY: mapY(analysis.vTarget),
-        text: fmtComma(analysis.vTarget, 1),
-        color: '#34d399', // emerald-400
-      });
-    }
-
-    if (analysis.tUjiMs <= maxTimeMs) {
-      items.push({
-        id: 'vtuji',
-        val: analysis.vAtTuji,
-        rawY: mapY(analysis.vAtTuji),
-        adjY: mapY(analysis.vAtTuji),
-        text: fmtComma(analysis.vAtTuji, 1),
-        color: '#38bdf8', // sky-400
-      });
-    }
-
-    // Sort top-to-bottom (increasing Y) and nudge if too close (< 13px) to fixed ticks or previous labels
-    items.sort((a, b) => a.rawY - b.rawY);
+    // De-collide Y-axis labels
+    const byY = [...rawList].sort((a, b) => a.y - b.y);
     const occupiedYs = [...fixedYs];
-    for (const item of items) {
-      let y = item.rawY;
+    for (const item of byY) {
+      let y = item.y;
       for (const occ of occupiedYs) {
         if (Math.abs(y - occ) < 12) {
           y = y >= occ ? occ + 12.5 : occ - 12.5;
         }
       }
-      item.adjY = y;
+      item.adjYLabel = y;
       occupiedYs.push(y);
     }
-    return items;
-  }, [analysis, maxTimeMs, yLimit]);
 
-  // Ensure the log table in Tab 3 always shows at least the current simulation row
+    // Stagger X-axis time pills
+    const byX = [...rawList].sort((a, b) => a.x - b.x);
+    const placedX: { x: number; tier: number }[] = [];
+    for (const item of byX) {
+      let tier = 0;
+      for (const prev of placedX) {
+        if (Math.abs(item.x - prev.x) < 76 && prev.tier === tier) {
+          tier = (tier + 1) % 3;
+        }
+      }
+      item.xTier = tier;
+      placedX.push({ x: item.x, tier });
+    }
+
+    return rawList;
+  }, [analysis, solvedSubProblems, maxTimeMs, yLimit]);
+
+  const xAxisQuarterTicks = useMemo(() => {
+    if (!analysis.isValid || analysis.periodMs <= 0) return [];
+    const totalCycles = maxTimeMs / analysis.periodMs;
+    const stepFrac = totalCycles > 2 ? 0.5 : 0.25;
+    const arr: number[] = [];
+    for (let f = stepFrac; f <= totalCycles + 0.001; f += stepFrac) {
+      arr.push(f * analysis.periodMs);
+    }
+    return arr;
+  }, [analysis, maxTimeMs]);
+
   const effectiveWaveformLogs = useMemo(() => {
     if (waveformLogs.length > 0) return waveformLogs;
     if (!analysis.isValid) return [];
@@ -312,7 +294,7 @@ export default function PrintReportSheet({
               </div>
               <div className="text-[10.5px] font-extrabold text-slate-900 leading-tight">
                 {activeTab === 'sinusoidal' &&
-                  'Simulator Gelombang Sinusoidal & Analisis AC'}
+                  `Simulator Gelombang Sinusoidal & Analisis AC — ${analysis.questionLabel}`}
                 {activeTab === 'konversi' &&
                   'Kalkulator Konversi Satuan Sudut (Derajat Desimal, Radian & DMS)'}
                 {activeTab === 'tujuan' &&
@@ -372,40 +354,47 @@ export default function PrintReportSheet({
       </div>
 
       {/* ====================================================================
-          TAB 3 A4 LANDSCAPE SHEET: HERO GRAPH CENTERPIECE LAYOUT
+          TAB 3 A4 LANDSCAPE SHEET: HERO GRAPH CENTERPIECE + DYNAMIC SUB-PROBLEMS
          ==================================================================== */}
       {activeTab === 'sinusoidal' && (
         <div className="space-y-1.5 break-inside-avoid">
-          {/* TIER 1: HERO OSCILLOSCOPE GRAPH (7 cols / ~58% width) flanked by Input (2 cols) & Analisis (3 cols) */}
+          {/* TIER 1: Input (2 cols) | HERO OSCILLOSCOPE GRAPH (7 cols) | Dynamic Sub-Problem Answers (3 cols) */}
           <div className="grid grid-cols-12 gap-2 items-stretch">
-            {/* LEFT (2 cols): Compact Input Parameter Gelombang */}
+            {/* LEFT (2 cols): Problem Details & Wave Parameters */}
             <div className="col-span-2 bg-white border border-slate-200 rounded-xl p-2 flex flex-col justify-between shadow-sm">
               <div className="space-y-1">
                 <div className="border-b-2 border-cyan-600 pb-0.5">
                   <h3 className="text-[9px] font-extrabold text-slate-900">
-                    Input Parameter
+                    Detail &amp; Parameter Soal
                   </h3>
-                </div>
-
-                <div className="text-[6.5px] font-extrabold uppercase tracking-wider text-cyan-600">
-                  1. IDENTITAS PERSAMAAN
                 </div>
 
                 <div className="space-y-1 text-[7.5px]">
                   <div>
                     <div className="text-[6.5px] text-slate-500 font-semibold">
-                      No. / Ket. Soal
+                      No. Soal
                     </div>
                     <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-slate-50/60 font-bold text-slate-900 truncate">
                       {analysis.questionLabel}
                     </div>
                   </div>
 
+                  {sinusoidalParams.problemDetails && (
+                    <div>
+                      <div className="text-[6.5px] text-slate-500 font-semibold">
+                        Keterangan Soal
+                      </div>
+                      <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-slate-50/40 text-[6.5px] text-slate-700 leading-tight line-clamp-4">
+                        {sinusoidalParams.problemDetails}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <div className="text-[6.5px] text-slate-500 font-semibold">
                       Besaran AC
                     </div>
-                    <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-slate-50/60 font-semibold text-slate-900 truncate">
+                    <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-white font-semibold text-slate-900 truncate">
                       {quantityName} — {varName}(t) [{unitSymbol}]
                     </div>
                   </div>
@@ -453,29 +442,6 @@ export default function PrintReportSheet({
                     </div>
                   </div>
                 </div>
-
-                <div className="text-[6.5px] font-extrabold uppercase tracking-wider text-cyan-600 pt-0.5 border-t border-slate-100">
-                  2. PARAMETER UJI (C &amp; D)
-                </div>
-
-                <div className="grid grid-cols-2 gap-1 text-[7.5px]">
-                  <div>
-                    <div className="text-[6.5px] text-slate-500 font-semibold">
-                      t_uji (ms) [c]
-                    </div>
-                    <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-white font-bold text-slate-900">
-                      {analysis.tUjiMs} ms
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[6.5px] text-slate-500 font-semibold">
-                      {varName}_target [d]
-                    </div>
-                    <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-white font-bold text-slate-900">
-                      {analysis.vTarget} {unitSymbol}
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Status Box */}
@@ -483,7 +449,7 @@ export default function PrintReportSheet({
                 <div className="text-[7.5px] font-extrabold text-slate-900 uppercase leading-tight">
                   STATUS: {analysis.phaseStatusLabel}
                 </div>
-                <div className="text-[6.8px] text-slate-600 leading-tight mt-0.5">
+                <div className="text-[6.6px] text-slate-600 leading-tight mt-0.5">
                   {statusNarrative}
                 </div>
               </div>
@@ -491,22 +457,22 @@ export default function PrintReportSheet({
 
             {/* ==============================================================
                 CENTER HERO (7 cols / ~58% Page Width):
-                SKETSA GELOMBANG SINUSOIDAL (MAIN VISUAL FOCUS)
+                SKETSA GELOMBANG SINUSOIDAL (ALL DYNAMIC SUB-PROBLEM POINTS)
                ============================================================== */}
             <div className="col-span-7 bg-white border-2 border-cyan-600/80 rounded-xl p-2.5 shadow-md flex flex-col justify-between">
               <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-1">
                 <div className="flex items-center gap-3">
                   <h3 className="text-[11px] font-extrabold text-slate-900 tracking-tight">
-                    Sketsa Gelombang Sinusoidal (1 Cycle Waveform)
+                    Sketsa Gelombang Sinusoidal (Plot Titik Sub-Soal)
                   </h3>
                   <div className="flex items-center gap-3 text-[8px] text-slate-600">
                     <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
                       <span className="w-4 h-0.5 bg-cyan-400 inline-block" />
-                      <span>Gelombang Terukur {varName}(t)</span>
+                      <span>Terukur {varName}(t)</span>
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <span className="w-4 h-0.5 border-b-2 border-dashed border-slate-400 inline-block" />
-                      <span>Acuan Standar (φ = 0)</span>
+                      <span>Acuan (φ = 0)</span>
                     </span>
                   </div>
                 </div>
@@ -518,10 +484,7 @@ export default function PrintReportSheet({
 
               {/* LARGE DARK OSCILLOSCOPE CANVAS */}
               <div className="rounded-xl bg-[#0b111e] p-1.5 border border-slate-800 flex-1 flex items-center">
-                <svg
-                  viewBox={`0 0 ${svgW} ${svgH}`}
-                  className="w-full h-auto"
-                >
+                <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-auto">
                   <defs>
                     <linearGradient
                       id="printHeroWaveGrad"
@@ -530,27 +493,16 @@ export default function PrintReportSheet({
                       x2="0"
                       y2="1"
                     >
-                      <stop
-                        offset="0%"
-                        stopColor="#22d3ee"
-                        stopOpacity="0.18"
-                      />
-                      <stop
-                        offset="50%"
-                        stopColor="#22d3ee"
-                        stopOpacity="0.02"
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor="#22d3ee"
-                        stopOpacity="0.18"
-                      />
+                      <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.18" />
+                      <stop offset="50%" stopColor="#22d3ee" stopOpacity="0.02" />
+                      <stop offset="100%" stopColor="#22d3ee" stopOpacity="0.18" />
                     </linearGradient>
                   </defs>
 
-                  {/* Minor & Major Horizontal Graticule Gridlines */}
+                  {/* Horizontal Graticule Gridlines */}
                   {[-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1].map((f) => {
-                    const isMajor = f === -1 || f === -0.5 || f === 0 || f === 0.5 || f === 1;
+                    const isMajor =
+                      f === -1 || f === -0.5 || f === 0 || f === 0.5 || f === 1;
                     return (
                       <line
                         key={`h-${f}`}
@@ -568,33 +520,20 @@ export default function PrintReportSheet({
                     );
                   })}
 
-                  {/* Minor & Major Vertical Graticule Gridlines */}
-                  {[0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0].map(
-                    (frac) => {
-                      const isQuarter =
-                        frac === 0.25 ||
-                        frac === 0.5 ||
-                        frac === 0.75 ||
-                        frac === 1.0;
-                      return (
-                        <line
-                          key={`v-${frac}`}
-                          x1={mapX(frac * analysis.periodMs)}
-                          y1={padT}
-                          x2={mapX(frac * analysis.periodMs)}
-                          y2={svgH - padB}
-                          stroke={
-                            isQuarter
-                              ? 'rgba(148, 163, 184, 0.18)'
-                              : 'rgba(148, 163, 184, 0.08)'
-                          }
-                          strokeWidth={isQuarter ? 1 : 0.7}
-                        />
-                      );
-                    }
-                  )}
+                  {/* Vertical Graticule Gridlines */}
+                  {xAxisQuarterTicks.map((tVal) => (
+                    <line
+                      key={`v-${tVal}`}
+                      x1={mapX(tVal)}
+                      y1={padT}
+                      x2={mapX(tVal)}
+                      y2={svgH - padB}
+                      stroke="rgba(148, 163, 184, 0.16)"
+                      strokeWidth={1}
+                    />
+                  ))}
 
-                  {/* Main Y Axis (at t = 0) with Top Arrow */}
+                  {/* Main Y Axis with Top Arrow */}
                   <line
                     x1={padL}
                     y1={svgH - padB + 8}
@@ -616,7 +555,7 @@ export default function PrintReportSheet({
                     {quantityName} {varName} ({unitSymbol})
                   </text>
 
-                  {/* Main X Axis (at y = 0) with Right Arrow */}
+                  {/* Main X Axis with Right Arrow */}
                   <line
                     x1={padL - 6}
                     y1={zeroY}
@@ -638,7 +577,7 @@ export default function PrintReportSheet({
                     t (ms)
                   </text>
 
-                  {/* Fixed Y-Axis Tick Labels: +A, 0, -A */}
+                  {/* Fixed Y-Axis Ticks: +A, 0, -A */}
                   <g>
                     <line
                       x1={padL - 5}
@@ -684,35 +623,11 @@ export default function PrintReportSheet({
                     </text>
                   </g>
 
-                  {/* De-collided Dynamic Y-Axis Labels (v0, v_target, v_tuji) */}
-                  {yAxisDynamicLabels.map((lbl) => (
-                    <g key={lbl.id}>
-                      <line
-                        x1={padL - 4}
-                        y1={lbl.rawY}
-                        x2={padL + 4}
-                        y2={lbl.rawY}
-                        stroke={lbl.color}
-                        strokeWidth={1.4}
-                      />
-                      <text
-                        x={padL - 10}
-                        y={lbl.adjY + 4}
-                        textAnchor="end"
-                        fill={lbl.color}
-                        className="font-mono text-[11.5px] font-bold"
-                      >
-                        {lbl.text}
-                      </text>
-                    </g>
-                  ))}
-
-                  {/* X-Axis Quarter-Cycle Tick Labels (e.g. 5, 10, 15, 20 ms) */}
-                  {[0.25, 0.5, 0.75, 1.0].map((frac) => {
-                    const tVal = frac * analysis.periodMs;
+                  {/* X-Axis Quarter-Cycle Tick Numbers */}
+                  {xAxisQuarterTicks.map((tVal) => {
                     const x = mapX(tVal);
                     return (
-                      <g key={`xtick-${frac}`}>
+                      <g key={`xtick-${tVal}`}>
                         <line
                           x1={x}
                           y1={zeroY - 4}
@@ -741,10 +656,8 @@ export default function PrintReportSheet({
                     );
                   })}
 
-                  {/* Subtle Area Fill under Measured Wave */}
+                  {/* Area Fill + Reference Wave + Measured Cyan Wave */}
                   <path d={measuredAreaPath} fill="url(#printHeroWaveGrad)" />
-
-                  {/* Reference Standard Wave (Dashed Light Slate) */}
                   <path
                     d={refPath}
                     fill="none"
@@ -752,8 +665,6 @@ export default function PrintReportSheet({
                     strokeWidth={2}
                     strokeDasharray="7 5"
                   />
-
-                  {/* Measured Phase-Shifted Wave (Bold Glowing Cyan) */}
                   <path
                     d={measuredPath}
                     fill="none"
@@ -761,28 +672,7 @@ export default function PrintReportSheet({
                     strokeWidth={3.2}
                   />
 
-                  {/* Reference Equation Label Pill inside Canvas */}
-                  <g>
-                    <rect
-                      x={mapX(0.54 * analysis.periodMs)}
-                      y={mapY(-0.52 * analysis.amplitude) - 11}
-                      width={165}
-                      height={18}
-                      rx={4}
-                      fill="rgba(15, 23, 42, 0.88)"
-                      stroke="rgba(148, 163, 184, 0.35)"
-                    />
-                    <text
-                      x={mapX(0.54 * analysis.periodMs) + 8}
-                      y={mapY(-0.52 * analysis.amplitude) + 2}
-                      className="fill-slate-300 font-mono text-[10.5px]"
-                    >
-                      Acuan: {varName} = {analysis.amplitude}{' '}
-                      {analysis.waveType}({analysis.omegaInput}t)
-                    </text>
-                  </g>
-
-                  {/* Measured Wave Equation Label Pill near Peak */}
+                  {/* Measured Wave Equation Label Pill */}
                   <g>
                     <rect
                       x={padL + 14}
@@ -803,499 +693,216 @@ export default function PrintReportSheet({
                     </text>
                   </g>
 
-                  {/* 1. Point (b): t = 0 (Orange Dot) */}
-                  <circle
-                    cx={padL}
-                    cy={mapY(analysis.vAtZero)}
-                    r={5}
-                    fill="#fb923c"
-                    stroke="#0b111e"
-                    strokeWidth={1.8}
-                  />
+                  {/* ==========================================================
+                      ALL DYNAMIC SUB-PROBLEM POINTS PLOTTED ON HERO GRAPH
+                     ========================================================== */}
+                  {plottablePoints.map((sp) => {
+                    const pt = sp.plotPoint!;
+                    const badgeW = 76;
+                    const badgeH = 18;
+                    const badgeY = zeroY + 22 + sp.xTier * 20;
+                    const clampedBadgeX = Math.max(
+                      padL + 4,
+                      Math.min(svgW - padR - badgeW - 4, sp.x - badgeW / 2)
+                    );
 
-                  {/* 2. Point (d): First Target Crossing (Emerald Green Dashed Lines & Pill Badge) */}
-                  {analysis.tAtTargetMs !== null &&
-                    analysis.tAtTargetMs <= maxTimeMs && (
-                      <g>
+                    return (
+                      <g key={sp.item.id}>
+                        {/* Y-axis dynamic colored tick & label */}
+                        <line
+                          x1={padL - 4}
+                          y1={sp.y}
+                          x2={padL + 4}
+                          y2={sp.y}
+                          stroke={sp.color}
+                          strokeWidth={1.5}
+                        />
+                        <text
+                          x={padL - 10}
+                          y={sp.adjYLabel + 4}
+                          textAnchor="end"
+                          fill={sp.color}
+                          className="font-mono text-[11px] font-bold"
+                        >
+                          {fmtComma(pt.yVal, 1)}
+                        </text>
+
+                        {/* Horizontal & Vertical Dashed Projection Lines */}
                         <line
                           x1={padL}
-                          y1={mapY(analysis.vTarget)}
-                          x2={mapX(analysis.tAtTargetMs)}
-                          y2={mapY(analysis.vTarget)}
-                          stroke="#34d399"
+                          y1={sp.y}
+                          x2={sp.x}
+                          y2={sp.y}
+                          stroke={sp.color}
                           strokeWidth={1.5}
                           strokeDasharray="4 4"
                         />
                         <line
-                          x1={mapX(analysis.tAtTargetMs)}
-                          y1={mapY(analysis.vTarget)}
-                          x2={mapX(analysis.tAtTargetMs)}
+                          x1={sp.x}
+                          y1={sp.y}
+                          x2={sp.x}
                           y2={zeroY}
-                          stroke="#34d399"
+                          stroke={sp.color}
                           strokeWidth={1.5}
                           strokeDasharray="4 4"
                         />
+
+                        {/* Dot Marker */}
                         <circle
-                          cx={mapX(analysis.tAtTargetMs)}
-                          cy={mapY(analysis.vTarget)}
-                          r={4.8}
-                          fill="#34d399"
+                          cx={sp.x}
+                          cy={sp.y}
+                          r={5}
+                          fill={sp.color}
                           stroke="#0b111e"
                           strokeWidth={1.8}
                         />
-                        {/* High-contrast time badge below axis */}
-                        <rect
-                          x={mapX(analysis.tAtTargetMs) - 34}
-                          y={zeroY + 22}
-                          width={68}
-                          height={18}
-                          rx={4}
-                          fill="#064e3b"
-                          stroke="#34d399"
-                          strokeWidth={1}
+
+                        {/* Letter Circle Badge near Dot */}
+                        <circle
+                          cx={sp.x}
+                          cy={sp.y > padT + 28 ? sp.y - 16 : sp.y + 16}
+                          r={9}
+                          fill="#0b111e"
+                          stroke={sp.color}
+                          strokeWidth={1.5}
                         />
                         <text
-                          x={mapX(analysis.tAtTargetMs)}
-                          y={zeroY + 34}
+                          x={sp.x}
+                          y={sp.y > padT + 28 ? sp.y - 12.5 : sp.y + 19.5}
                           textAnchor="middle"
-                          className="fill-emerald-300 font-mono text-[10.5px] font-bold"
+                          fill={sp.color}
+                          className="font-mono text-[10px] font-bold"
                         >
-                          ↑ {fmtComma(analysis.tAtTargetMs, 3)}
+                          {sp.item.label}
                         </text>
+
+                        {/* X-Axis Callout Pill (for t > 0) */}
+                        {pt.tMs > 0 && (
+                          <g>
+                            <rect
+                              x={clampedBadgeX}
+                              y={badgeY}
+                              width={badgeW}
+                              height={badgeH}
+                              rx={4}
+                              fill="rgba(11, 17, 30, 0.94)"
+                              stroke={sp.color}
+                              strokeWidth={1.1}
+                            />
+                            <text
+                              x={clampedBadgeX + badgeW / 2}
+                              y={badgeY + 12.5}
+                              textAnchor="middle"
+                              fill={sp.color}
+                              className="font-mono text-[9.5px] font-bold"
+                            >
+                              ({sp.item.label}) {fmtComma(pt.tMs, 2)}ms
+                            </text>
+                          </g>
+                        )}
                       </g>
-                    )}
-
-                  {/* 3. Point (e): First Maximum Peak (Pink/Magenta Dashed Lines & Pill Badge) */}
-                  {analysis.tAtMaxMs <= maxTimeMs && (
-                    <g>
-                      <line
-                        x1={padL}
-                        y1={mapY(analysis.amplitude)}
-                        x2={mapX(analysis.tAtMaxMs)}
-                        y2={mapY(analysis.amplitude)}
-                        stroke="#f472b6"
-                        strokeWidth={1.5}
-                        strokeDasharray="4 4"
-                      />
-                      <line
-                        x1={mapX(analysis.tAtMaxMs)}
-                        y1={mapY(analysis.amplitude)}
-                        x2={mapX(analysis.tAtMaxMs)}
-                        y2={zeroY}
-                        stroke="#f472b6"
-                        strokeWidth={1.5}
-                        strokeDasharray="4 4"
-                      />
-                      <circle
-                        cx={mapX(analysis.tAtMaxMs)}
-                        cy={mapY(analysis.amplitude)}
-                        r={5}
-                        fill="#f472b6"
-                        stroke="#0b111e"
-                        strokeWidth={1.8}
-                      />
-                      {/* High-contrast time badge below axis */}
-                      <rect
-                        x={mapX(analysis.tAtMaxMs) - 34}
-                        y={
-                          analysis.tAtTargetMs !== null &&
-                          Math.abs(
-                            mapX(analysis.tAtMaxMs) -
-                              mapX(analysis.tAtTargetMs)
-                          ) < 72
-                            ? zeroY + 42
-                            : zeroY + 22
-                        }
-                        width={68}
-                        height={18}
-                        rx={4}
-                        fill="#500724"
-                        stroke="#f472b6"
-                        strokeWidth={1}
-                      />
-                      <text
-                        x={mapX(analysis.tAtMaxMs)}
-                        y={
-                          analysis.tAtTargetMs !== null &&
-                          Math.abs(
-                            mapX(analysis.tAtMaxMs) -
-                              mapX(analysis.tAtTargetMs)
-                          ) < 72
-                            ? zeroY + 54
-                            : zeroY + 34
-                        }
-                        textAnchor="middle"
-                        className="fill-pink-300 font-mono text-[10.5px] font-bold"
-                      >
-                        ↑ {fmtComma(analysis.tAtMaxMs, 3)}
-                      </text>
-                    </g>
-                  )}
-
-                  {/* 4. Point (c): Test Time t_uji (Cyan Dashed Lines & Callout Badge) */}
-                  {analysis.tUjiMs <= maxTimeMs && (
-                    <g>
-                      <line
-                        x1={padL}
-                        y1={mapY(analysis.vAtTuji)}
-                        x2={mapX(analysis.tUjiMs)}
-                        y2={mapY(analysis.vAtTuji)}
-                        stroke="#38bdf8"
-                        strokeWidth={1.5}
-                        strokeDasharray="4 4"
-                      />
-                      <line
-                        x1={mapX(analysis.tUjiMs)}
-                        y1={mapY(analysis.vAtTuji)}
-                        x2={mapX(analysis.tUjiMs)}
-                        y2={zeroY}
-                        stroke="#38bdf8"
-                        strokeWidth={1.5}
-                        strokeDasharray="4 4"
-                      />
-                      <circle
-                        cx={mapX(analysis.tUjiMs)}
-                        cy={mapY(analysis.vAtTuji)}
-                        r={4.8}
-                        fill="#38bdf8"
-                        stroke="#0b111e"
-                        strokeWidth={1.8}
-                      />
-                      <rect
-                        x={mapX(analysis.tUjiMs) + 8}
-                        y={mapY(analysis.vAtTuji) - 10}
-                        width={92}
-                        height={18}
-                        rx={4}
-                        fill="rgba(12, 74, 110, 0.92)"
-                        stroke="#38bdf8"
-                        strokeWidth={1}
-                      />
-                      <text
-                        x={mapX(analysis.tUjiMs) + 54}
-                        y={mapY(analysis.vAtTuji) + 2}
-                        textAnchor="middle"
-                        className="fill-sky-200 font-mono text-[10px] font-bold"
-                      >
-                        t={analysis.tUjiMs}ms: {fmtComma(analysis.vAtTuji, 2)}
-                        {unitSymbol}
-                      </text>
-                    </g>
-                  )}
+                    );
+                  })}
                 </svg>
               </div>
 
-              {/* Color-Coded Key Points Legend Bar directly under the Hero Graph */}
-              <div className="grid grid-cols-4 gap-1.5 pt-1.5 text-[7.5px] font-mono">
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-950">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                  <span className="truncate">
-                    (b) t=0: <strong>{fmtComma(analysis.vAtZero, 3)} {unitSymbol}</strong>
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-sky-50 border border-sky-200 text-sky-950">
-                  <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
-                  <span className="truncate">
-                    (c) t={analysis.tUjiMs}ms: <strong>{fmtComma(analysis.vAtTuji, 3)} {unitSymbol}</strong>
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-950">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                  <span className="truncate">
-                    (d) {varName}={fmtComma(analysis.vTarget, 1)}{unitSymbol}:{' '}
-                    <strong>
-                      {analysis.tAtTargetMs !== null
-                        ? `${fmtComma(analysis.tAtTargetMs, 3)} ms`
-                        : '-'}
-                    </strong>
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-pink-50 border border-pink-200 text-pink-950">
-                  <span className="w-2 h-2 rounded-full bg-pink-500 shrink-0" />
-                  <span className="truncate">
-                    (e) Peak +{analysis.amplitude}{unitSymbol}:{' '}
-                    <strong>{fmtComma(analysis.tAtMaxMs, 3)} ms</strong>
-                  </span>
-                </div>
+              {/* Dynamic Color-Coded Key Points Legend Bar directly under the Hero Graph */}
+              <div className="flex flex-wrap gap-1.5 pt-1.5 text-[7.5px] font-mono">
+                {plottablePoints.map((sp) => (
+                  <div
+                    key={sp.item.id}
+                    style={{ borderColor: sp.color }}
+                    className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-50 border text-slate-900"
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: sp.color }}
+                    />
+                    <span>
+                      ({sp.item.label}) <strong>{fmtCommaStr(sp.answerText)}</strong>{' '}
+                      <span className="text-slate-500">
+                        @ {fmtComma(sp.plotPoint!.tMs, 2)}ms
+                      </span>
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* RIGHT (3 cols): Hasil Analisis Jawaban Soal (Poin a - e) */}
+            {/* RIGHT (3 cols): Dynamic Hasil Analisis Jawaban Soal */}
             <div className="col-span-3 bg-white border border-slate-200 rounded-xl p-2.5 flex flex-col justify-between shadow-sm">
               <div>
                 <div className="border-b-2 border-cyan-600 pb-1 mb-1.5">
                   <h3 className="text-[9.5px] font-extrabold text-slate-900">
-                    Hasil Analisis Jawaban Soal (Poin a - e)
+                    Hasil Analisis Jawaban Soal ({solvedSubProblems.length} Sub-Soal)
                   </h3>
                 </div>
 
-                <div className="space-y-1.5 text-[8px]">
-                  <div className="p-1.5 rounded-lg bg-slate-50 border border-slate-200">
-                    <div className="text-[7px] text-slate-500 font-semibold">
-                      (a1) Periode (T) &amp; Frekuensi (f)
+                <div className="space-y-1.5 text-[7.8px]">
+                  {solvedSubProblems.slice(0, 8).map((sp) => (
+                    <div
+                      key={sp.item.id}
+                      style={{ borderLeftColor: sp.color }}
+                      className="p-1.5 rounded-lg bg-slate-50/70 border border-slate-200 border-l-4"
+                    >
+                      <div className="text-[7px] text-slate-600 font-semibold leading-tight">
+                        ({sp.item.label}) {sp.item.prompt}
+                      </div>
+                      <div className="font-mono font-bold text-slate-950 text-[8.5px] mt-0.5 leading-snug">
+                        {fmtCommaStr(sp.answerText)}
+                      </div>
                     </div>
-                    <div className="font-mono font-bold text-slate-950 text-[8.5px] mt-0.5">
-                      {fmtComma(analysis.periodS, 4)} s (
-                      {fmtComma(analysis.periodMs, 2)} ms) |{' '}
-                      {fmtComma(analysis.frequencyHz, 2)} Hz
-                    </div>
-                  </div>
-
-                  <div className="p-1.5 rounded-lg bg-slate-50 border border-slate-200">
-                    <div className="text-[7px] text-slate-500 font-semibold">
-                      (a2) Sudut Fase (φ)
-                    </div>
-                    <div className="font-mono font-bold text-slate-950 text-[8.5px] mt-0.5">
-                      {fmtComma(analysis.phiDegSigned, 2)}° (
-                      {fmtCommaStr(analysis.phiDmsFormatted)}) ({shortPhaseName})
-                    </div>
-                  </div>
-
-                  <div className="p-1.5 rounded-lg bg-amber-50/50 border border-amber-200/80 flex items-center justify-between">
-                    <span className="text-slate-700 font-medium">
-                      (b) {quantityName} {varName} saat t = 0
-                    </span>
-                    <strong className="font-mono text-[9px] text-slate-950">
-                      {fmtComma(analysis.vAtZero, 3)} {unitSymbol}
-                    </strong>
-                  </div>
-
-                  <div className="p-1.5 rounded-lg bg-sky-50/50 border border-sky-200/80 flex items-center justify-between">
-                    <span className="text-slate-700 font-medium">
-                      (c) {quantityName} {varName} saat t = {analysis.tUjiMs} ms
-                    </span>
-                    <strong className="font-mono text-[9px] text-slate-950">
-                      {fmtComma(analysis.vAtTuji, 3)} {unitSymbol}
-                    </strong>
-                  </div>
-
-                  <div className="p-1.5 rounded-lg bg-emerald-50/50 border border-emerald-200/80 flex items-center justify-between">
-                    <span className="text-slate-700 font-medium">
-                      (d) Waktu t saat {varName} ={' '}
-                      {fmtComma(analysis.vTarget, 1)} {unitSymbol}
-                    </span>
-                    <strong className="font-mono text-[9px] text-slate-950">
-                      {analysis.tAtTargetMs !== null
-                        ? `${fmtComma(analysis.tAtTargetMs, 3)} ms`
-                        : analysis.tAtTargetFormatted}
-                    </strong>
-                  </div>
-
-                  <div className="p-1.5 rounded-lg bg-pink-50/50 border border-pink-200/80 flex items-center justify-between">
-                    <span className="text-slate-700 font-medium">
-                      (e) Waktu t saat {varName} Maks (+A)
-                    </span>
-                    <strong className="font-mono text-[9px] text-slate-950">
-                      {fmtComma(analysis.tAtMaxMs, 3)} ms
-                    </strong>
-                  </div>
+                  ))}
                 </div>
               </div>
 
               <div className="mt-1.5 pt-1 border-t border-slate-100 text-[7px] text-slate-500 font-mono flex items-center justify-between">
-                <span>1 Siklus Penuh: T = {fmtComma(analysis.periodMs, 2)} ms</span>
+                <span>Periode T = {fmtComma(analysis.periodMs, 2)} ms</span>
                 <span>ω = {fmtComma(analysis.omegaRad, 2)} rad/s</span>
               </div>
             </div>
           </div>
 
-          {/* TIER 2: Uraian Langkah Perhitungan Lengkap (7 cols, 4 horizontal boxes) + Log Percobaan (5 cols) */}
+          {/* TIER 2: Dynamic Uraian Langkah Perhitungan Lengkap (7 cols) + Log Percobaan (5 cols) */}
           <div className="grid grid-cols-12 gap-2 items-stretch">
-            {/* LEFT (7 cols): Uraian Langkah Perhitungan Lengkap (4 Bagian) */}
+            {/* LEFT (7 cols): Dynamic Step-by-Step Derivations for User's Sub-Problems */}
             <div className="col-span-7 bg-white border border-slate-200 rounded-xl p-2 shadow-sm">
               <div className="border-b-2 border-cyan-600 pb-0.5 mb-1">
                 <h3 className="text-[9px] font-extrabold text-slate-900">
-                  Uraian Langkah Perhitungan Lengkap (4 Bagian)
+                  Uraian Langkah Perhitungan Lengkap
                 </h3>
               </div>
 
-              <div className="grid grid-cols-4 gap-1.5">
-                {/* Step 1: Poin a */}
-                <div className="border border-slate-200 rounded-lg p-1.5 bg-slate-50/40 space-y-0.5">
-                  <div className="text-[7.2px] font-extrabold text-slate-900 border-b border-slate-200 pb-0.5">
-                    1. Parameter &amp; Fase (Poin a)
-                  </div>
-                  <div className="font-mono text-[6.8px] text-slate-800 space-y-0.5 leading-tight">
-                    <div>
-                      ω = {analysis.omegaInput} = {fmtComma(analysis.omegaRad, 2)}{' '}
-                      rad/s
+              <div
+                className={`grid gap-1.5 ${
+                  solvedSubProblems.length <= 4 ? 'grid-cols-4' : 'grid-cols-5'
+                }`}
+              >
+                {solvedSubProblems.slice(0, 5).map((sp) => (
+                  <div
+                    key={sp.item.id}
+                    style={{ borderTopColor: sp.color }}
+                    className="border border-slate-200 border-t-2 rounded-lg p-1.5 bg-slate-50/40 space-y-0.5"
+                  >
+                    <div className="text-[7px] font-extrabold text-slate-900 border-b border-slate-200 pb-0.5 truncate">
+                      ({sp.item.label}) {sp.item.prompt}
                     </div>
-                    <div className="flex items-center flex-wrap">
-                      <span>T =</span>
-                      <Frac top="2π" bottom="ω" />
-                      <span>=</span>
-                      <Frac top="2π" bottom={analysis.omegaInput} />
-                    </div>
-                    <div className="font-bold text-slate-950">
-                      = {fmtComma(analysis.periodS, 4)} s (
-                      {fmtComma(analysis.periodMs, 2)} ms)
-                    </div>
-                    <div className="flex items-center flex-wrap">
-                      <span>f =</span>
-                      <Frac top="1" bottom="T" />
-                      <span>= {fmtComma(analysis.frequencyHz, 2)} Hz</span>
-                    </div>
-                    <div className="flex items-center flex-wrap">
-                      <span>φ = {fmtComma(analysis.phiRadSigned, 3)} ×</span>
-                      <Frac top="180°" bottom="π" />
-                    </div>
-                    <div className="font-bold text-slate-950">
-                      = {fmtComma(analysis.phiDegSigned, 2)}° (
-                      {fmtCommaStr(analysis.phiDmsFormatted)})
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step 2: Poin b & c */}
-                <div className="border border-slate-200 rounded-lg p-1.5 bg-slate-50/40 space-y-0.5">
-                  <div className="text-[7.2px] font-extrabold text-slate-900 border-b border-slate-200 pb-0.5">
-                    2. Nilai t=0 &amp; t_uji (Poin b &amp; c)
-                  </div>
-                  <div className="font-mono text-[6.8px] text-slate-800 space-y-0.5 leading-tight">
-                    <div>
-                      {varName}(0) = {analysis.amplitude} {analysis.waveType}(
-                      {fmtComma(analysis.omegaRad, 2)}(0){' '}
-                      {analysis.phiRadSigned >= 0 ? '+' : '-'}{' '}
-                      {fmtComma(analysis.phiRadUnsigned, 3)})
-                    </div>
-                    <div>
-                      = {analysis.amplitude} {analysis.waveType}(
-                      {fmtComma(analysis.phiRadSigned, 3)} rad)
-                    </div>
-                    <div className="font-bold text-slate-950">
-                      = {fmtComma(analysis.vAtZero, 3)} {unitSymbol}
-                    </div>
-                    <div className="pt-0.5 border-t border-slate-200/80">
-                      {varName}({fmtComma(analysis.tUjiSec, 3)}) ={' '}
-                      {analysis.amplitude} {analysis.waveType}(
-                      {fmtComma(analysis.omegaRad, 2)}×
-                      {fmtComma(analysis.tUjiSec, 3)}{' '}
-                      {analysis.phiRadSigned >= 0 ? '+' : '-'}{' '}
-                      {fmtComma(analysis.phiRadUnsigned, 3)})
-                    </div>
-                    <div>
-                      = {analysis.amplitude} {analysis.waveType}(
-                      {fmtComma(
-                        analysis.omegaRad * analysis.tUjiSec +
-                          analysis.phiRadSigned,
-                        4
-                      )}{' '}
-                      rad)
-                    </div>
-                    <div className="font-bold text-slate-950">
-                      = {fmtComma(analysis.vAtTuji, 3)} {unitSymbol}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step 3: Poin d */}
-                <div className="border border-slate-200 rounded-lg p-1.5 bg-slate-50/40 space-y-0.5">
-                  <div className="text-[7.2px] font-extrabold text-slate-900 border-b border-slate-200 pb-0.5">
-                    3. Waktu Target {varName}={fmtComma(analysis.vTarget, 1)}
-                    {unitSymbol} (Poin d)
-                  </div>
-                  {analysis.targetExceedsAmplitude ? (
-                    <div className="font-mono text-[6.8px] text-red-600">
-                      |Target| &gt; A ({analysis.amplitude} {unitSymbol}).
-                    </div>
-                  ) : (
-                    (() => {
-                      const ratio = analysis.vTarget / analysis.amplitude;
-                      const invRad =
-                        analysis.waveType === 'cos'
-                          ? Math.acos(Math.max(-1, Math.min(1, ratio)))
-                          : Math.asin(Math.max(-1, Math.min(1, ratio)));
-                      const numerator = invRad - analysis.phiRadSigned;
-                      const tSec =
-                        analysis.tAtTargetMs !== null
-                          ? analysis.tAtTargetMs / 1000
-                          : 0;
-                      return (
-                        <div className="font-mono text-[6.8px] text-slate-800 space-y-0.5 leading-tight">
-                          <div className="flex items-center flex-wrap">
-                            <span>
-                              {analysis.waveType}(ωt ± φ) =
-                            </span>
-                            <Frac
-                              top={fmtComma(analysis.vTarget, 1)}
-                              bottom={analysis.amplitude}
-                            />
-                            <span>= {fmtComma(ratio, 4)}</span>
-                          </div>
-                          <div>
-                            ωt ± φ = arc{analysis.waveType}(
-                            {fmtComma(ratio, 4)}) = {fmtComma(invRad, 4)} rad
-                          </div>
-                          <div className="flex items-center flex-wrap">
-                            <span>t =</span>
-                            <Frac
-                              top={`${fmtComma(invRad, 4)} - (${fmtComma(analysis.phiRadSigned, 3)})`}
-                              bottom={fmtComma(analysis.omegaRad, 2)}
-                            />
-                          </div>
-                          <div className="flex items-center flex-wrap">
-                            <span>=</span>
-                            <Frac
-                              top={fmtComma(numerator, 4)}
-                              bottom={fmtComma(analysis.omegaRad, 2)}
-                            />
-                            <span>= {fmtComma(tSec, 6)} s</span>
-                          </div>
-                          <div className="font-bold text-slate-950">
-                            = {fmtComma(analysis.tAtTargetMs ?? 0, 3)} ms
-                          </div>
+                    <div className="font-mono text-[6.5px] text-slate-800 space-y-0.5 leading-tight">
+                      {sp.detailSteps.map((line, i) => (
+                        <div
+                          key={i}
+                          className={
+                            i === sp.detailSteps.length - 1
+                              ? 'font-bold text-slate-950'
+                              : ''
+                          }
+                        >
+                          {fmtCommaStr(line)}
                         </div>
-                      );
-                    })()
-                  )}
-                </div>
-
-                {/* Step 4: Poin e */}
-                <div className="border border-slate-200 rounded-lg p-1.5 bg-slate-50/40 space-y-0.5">
-                  <div className="text-[7.2px] font-extrabold text-slate-900 border-b border-slate-200 pb-0.5">
-                    4. Waktu Maks +{analysis.amplitude}
-                    {unitSymbol} (Poin e)
+                      ))}
+                    </div>
                   </div>
-                  {(() => {
-                    const peakAngle =
-                      analysis.waveType === 'cos' ? 0 : Math.PI / 2;
-                    const numerator = peakAngle - analysis.phiRadSigned;
-                    const tMaxSec = analysis.tAtMaxMs / 1000;
-                    return (
-                      <div className="font-mono text-[6.8px] text-slate-800 space-y-0.5 leading-tight">
-                        <div className="flex items-center flex-wrap">
-                          <span>Syarat Maks (+A) =</span>
-                          {analysis.waveType === 'sin' ? (
-                            <>
-                              <Frac top="π" bottom="2" />
-                              <span>(1,5708 rad)</span>
-                            </>
-                          ) : (
-                            <span>0 rad</span>
-                          )}
-                        </div>
-                        <div className="flex items-center flex-wrap">
-                          <span>t =</span>
-                          <Frac
-                            top={`${fmtComma(peakAngle, 4)} - (${fmtComma(analysis.phiRadSigned, 3)})`}
-                            bottom={fmtComma(analysis.omegaRad, 2)}
-                          />
-                        </div>
-                        <div className="flex items-center flex-wrap">
-                          <span>=</span>
-                          <Frac
-                            top={fmtComma(numerator, 4)}
-                            bottom={fmtComma(analysis.omegaRad, 2)}
-                          />
-                          <span>= {fmtComma(tMaxSec, 6)} s</span>
-                        </div>
-                        <div className="font-bold text-slate-950">
-                          = {fmtComma(analysis.tAtMaxMs, 3)} ms
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
+                ))}
               </div>
             </div>
 

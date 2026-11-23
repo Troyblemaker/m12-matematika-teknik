@@ -44,8 +44,42 @@ export type WaveFunctionType = 'sin' | 'cos';
 export type PhaseSignType = '0' | '+' | '-';
 export type ACQuantityType = 'v' | 'i';
 
+export type SubProblemType =
+  | 'params'
+  | 'value_at_time'
+  | 'time_at_value'
+  | 'time_at_max'
+  | 'time_at_min'
+  | 'time_at_zero';
+
+export interface SubProblemItem {
+  id: string;
+  label: string;
+  prompt: string;
+  type: SubProblemType;
+  timeValueMs?: number;
+  targetValue?: number;
+}
+
+export interface SolvedSubProblem {
+  item: SubProblemItem;
+  color: string;
+  answerText: string;
+  formulaLine: string;
+  detailSteps: string[];
+  plotPoint: {
+    tMs: number;
+    yVal: number;
+    yLabel: string;
+    xLabel: string;
+    shortBadge: string;
+  } | null;
+  isError?: boolean;
+}
+
 export interface SinusoidalInputParams {
   questionLabel?: string;
+  problemDetails?: string;
   quantityType?: ACQuantityType;
   amplitude: number;
   omegaInput: string;
@@ -54,6 +88,7 @@ export interface SinusoidalInputParams {
   phiInput: string;
   tUjiMs?: number;
   vTarget: number;
+  subProblems?: SubProblemItem[];
 }
 
 export interface SinusoidalAnalyticalResult {

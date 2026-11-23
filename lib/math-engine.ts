@@ -5,6 +5,8 @@ import {
   PhaseSignType,
   SinusoidalAnalyticalResult,
   SinusoidalInputParams,
+  SolvedSubProblem,
+  SubProblemItem,
   WaveFunctionType,
   WaveformPlotPoint,
 } from './types';
@@ -1000,18 +1002,22 @@ function createInvalidResult(
 }
 
 /**
- * Generates sample points across 1.25 cycles (t in [0, 1.25 * T]) for plotting
+ * Generates sample points across t in [0, maxTimeSec] (defaults to 1.25 cycles) for plotting
  * both the reference wave v_ref(t) = A sin(ωt) and phase-shifted wave v(t) = A sin(ωt ± φ).
  */
 export function generateWaveformPoints(
   result: SinusoidalAnalyticalResult,
-  numSteps = 250
+  numSteps = 250,
+  customMaxTimeMs?: number
 ): WaveformPlotPoint[] {
   if (!result.isValid || result.periodS <= 0) {
     return [];
   }
 
-  const maxTimeSec = 1.25 * result.periodS;
+  const maxTimeSec =
+    customMaxTimeMs && customMaxTimeMs > 0
+      ? customMaxTimeMs / 1000
+      : 1.25 * result.periodS;
   const points: WaveformPlotPoint[] = [];
 
   for (let i = 0; i <= numSteps; i++) {
@@ -1035,4 +1041,299 @@ export function generateWaveformPoints(
   }
 
   return points;
+}
+
+const SUBPROBLEM_COLORS = [
+  '#fb923c', // amber/orange
+  '#38bdf8', // sky cyan
+  '#34d399', // emerald green
+  '#f472b6', // pink/magenta
+  '#a78bfa', // violet
+  '#facc15', // yellow
+  '#fb7185', // rose
+  '#2dd4bf', // teal
+];
+
+/**
+ * Builds default (a)-(e) sub-problems from SinusoidalInputParams when none are explicitly set.
+ */
+export function buildDefaultSubProblems(
+  params: SinusoidalInputParams
+): SubProblemItem[] {
+  const varName = params.quantityType === 'i' ? 'i' : 'v';
+  const qtyName = params.quantityType === 'i' ? 'Arus' : 'Tegangan';
+  const unit = params.quantityType === 'i' ? 'A' : 'V';
+  const tUji = params.tUjiMs ?? 10;
+
+  return [
+    {
+      id: 'sp-a',
+      label: 'a',
+      prompt: 'Periode (T), Frekuensi (f), dan Sudut Fase (φ)',
+      type: 'params',
+    },
+    {
+      id: 'sp-b',
+      label: 'b',
+      prompt: `${qtyName} ${varName} saat t = 0 ms`,
+      type: 'value_at_time',
+      timeValueMs: 0,
+    },
+    {
+      id: 'sp-c',
+      label: 'c',
+      prompt: `${qtyName} ${varName} saat t = ${tUji} ms`,
+      type: 'value_at_time',
+      timeValueMs: tUji,
+    },
+    {
+      id: 'sp-d',
+      label: 'd',
+      prompt: `Waktu t pertama saat ${varName} = ${params.vTarget} ${unit}`,
+      type: 'time_at_value',
+      targetValue: params.vTarget,
+    },
+    {
+      id: 'sp-e',
+      label: 'e',
+      prompt: `Waktu t pertama saat ${varName} Maksimum (+${params.amplitude} ${unit})`,
+      type: 'time_at_max',
+    },
+  ];
+}
+
+/**
+ * Evaluates an arbitrary list of user-defined sub-problem questions (a, b, c, d, e, ...)
+ * against the solved sinusoidal waveform, producing both step-by-step solutions and graph plot points.
+ */
+export function solveSubProblems(
+  analysis: SinusoidalAnalyticalResult,
+  subProblems?: SubProblemItem[]
+): SolvedSubProblem[] {
+  const items =
+    subProblems && subProblems.length > 0
+      ? subProblems
+      : buildDefaultSubProblems({
+          amplitude: analysis.amplitude,
+          omegaInput: analysis.omegaInput,
+          waveType: analysis.waveType,
+          phaseSign: analysis.phaseSign,
+          phiInput: analysis.phiInput,
+          quantityType: analysis.quantityType,
+          tUjiMs: analysis.tUjiMs,
+          vTarget: analysis.vTarget,
+        });
+
+  if (!analysis.isValid) {
+    return items.map((item) => ({
+      item,
+      color: '#94a3b8',
+      answerText: '-',
+      formulaLine: 'Parameter gelombang belum valid.',
+      detailSteps: [],
+      plotPoint: null,
+      isError: true,
+    }));
+  }
+
+  const varName = analysis.quantityType === 'i' ? 'i' : 'v';
+  const unit = analysis.unitSymbol;
+  const phiSign = analysis.phiRadSigned >= 0 ? '+' : '-';
+  const absPhiStr = analysis.phiRadUnsigned.toFixed(3);
+  const omegaStr = analysis.omegaRad.toFixed(2);
+  let plotColorIdx = 0;
+
+  return items.map((item) => {
+    if (item.type === 'params') {
+      const shortPhase =
+        analysis.phaseSign === '+' && analysis.phiRadUnsigned > 1e-12
+          ? 'Leading'
+          : analysis.phaseSign === '-' && analysis.phiRadUnsigned > 1e-12
+          ? 'Lagging'
+          : 'In Phase';
+      return {
+        item,
+        color: '#22d3ee',
+        answerText: `T = ${analysis.periodS.toFixed(4)} s (${analysis.periodMs.toFixed(2)} ms) | f = ${analysis.frequencyHz.toFixed(2)} Hz | φ = ${analysis.phiDegSigned.toFixed(2)}° (${analysis.phiDmsFormatted}) (${shortPhase})`,
+        formulaLine: `T = 2π/ω, f = 1/T, φ = ${analysis.phiRadSigned.toFixed(3)} × 180°/π`,
+        detailSteps: [
+          `ω = ${analysis.omegaInput} = ${omegaStr} rad/s`,
+          `T = 2π / ${analysis.omegaInput} = ${analysis.periodS.toFixed(4)} s (${analysis.periodMs.toFixed(2)} ms)`,
+          `f = 1 / ${analysis.periodS.toFixed(4)} = ${analysis.frequencyHz.toFixed(2)} Hz`,
+          `φ = ${analysis.phiRadSigned.toFixed(3)} × (180° / π) = ${analysis.phiDegSigned.toFixed(2)}° (${analysis.phiDmsFormatted})`,
+        ],
+        plotPoint: null,
+      };
+    }
+
+    const color = SUBPROBLEM_COLORS[plotColorIdx % SUBPROBLEM_COLORS.length];
+    plotColorIdx++;
+
+    if (item.type === 'value_at_time') {
+      const tMs = Number.isFinite(item.timeValueMs) ? Number(item.timeValueMs) : 0;
+      const tSec = tMs / 1000;
+      const totalRad = analysis.omegaRad * tSec + analysis.phiRadSigned;
+      const yVal = evaluateWaveAt(
+        analysis.amplitude,
+        analysis.omegaRad,
+        analysis.phiRadSigned,
+        analysis.waveType,
+        tSec
+      );
+      return {
+        item,
+        color,
+        answerText: `${yVal.toFixed(3)} ${unit}`,
+        formulaLine: `${varName}(${tSec.toFixed(4)}) = ${analysis.amplitude} ${analysis.waveType}(${totalRad.toFixed(4)} rad)`,
+        detailSteps: [
+          `${varName}(${tSec.toFixed(4)}) = ${analysis.amplitude} ${analysis.waveType}(${omegaStr} × ${tSec.toFixed(4)} ${phiSign} ${absPhiStr})`,
+          `= ${analysis.amplitude} ${analysis.waveType}(${totalRad.toFixed(4)} rad)`,
+          `= ${yVal.toFixed(3)} ${unit}`,
+        ],
+        plotPoint: {
+          tMs,
+          yVal,
+          yLabel: yVal.toFixed(1),
+          xLabel: `${Number(tMs.toFixed(2))} ms`,
+          shortBadge: `(${item.label}) ${yVal.toFixed(2)} ${unit} @ ${Number(tMs.toFixed(2))}ms`,
+        },
+      };
+    }
+
+    if (item.type === 'time_at_value') {
+      const target = Number.isFinite(item.targetValue)
+        ? Number(item.targetValue)
+        : 0;
+      if (Math.abs(target) > analysis.amplitude) {
+        return {
+          item,
+          color,
+          answerText: `Melebihi Amplitudo (|${target}| > ${analysis.amplitude} ${unit})`,
+          formulaLine: `|Target| > Amplitudo A (${analysis.amplitude} ${unit})`,
+          detailSteps: [
+            `Target ${target} ${unit} berada di luar rentang [-${analysis.amplitude}, +${analysis.amplitude}] ${unit}.`,
+          ],
+          plotPoint: null,
+          isError: true,
+        };
+      }
+
+      const ratio = Math.max(-1, Math.min(1, target / analysis.amplitude));
+      let invRad: number;
+      let theta1: number;
+      let theta2: number;
+      if (analysis.waveType === 'sin') {
+        invRad = Math.asin(ratio);
+        theta1 = positiveModulo2Pi(invRad - analysis.phiRadSigned);
+        theta2 = positiveModulo2Pi(Math.PI - invRad - analysis.phiRadSigned);
+      } else {
+        invRad = Math.acos(ratio);
+        theta1 = positiveModulo2Pi(invRad - analysis.phiRadSigned);
+        theta2 = positiveModulo2Pi(-invRad - analysis.phiRadSigned);
+      }
+      const minTheta = Math.min(theta1, theta2);
+      const tSec = minTheta / analysis.omegaRad;
+      const tMs = tSec * 1000;
+
+      return {
+        item,
+        color,
+        answerText: `${tMs.toFixed(3)} ms`,
+        formulaLine: `t = (${minTheta.toFixed(4)}) / ${omegaStr} = ${tMs.toFixed(3)} ms`,
+        detailSteps: [
+          `${analysis.waveType}(${omegaStr}t ${phiSign} ${absPhiStr}) = ${target} / ${analysis.amplitude} = ${ratio.toFixed(4)}`,
+          `arc${analysis.waveType}(${ratio.toFixed(4)}) = ${invRad.toFixed(4)} rad → θ_min = ${minTheta.toFixed(4)} rad`,
+          `t = ${minTheta.toFixed(4)} / ${omegaStr} = ${tSec.toFixed(6)} s = ${tMs.toFixed(3)} ms`,
+        ],
+        plotPoint: {
+          tMs,
+          yVal: target,
+          yLabel: target.toFixed(1),
+          xLabel: `↑ ${tMs.toFixed(3)}`,
+          shortBadge: `(${item.label}) ${tMs.toFixed(3)} ms (${target}${unit})`,
+        },
+      };
+    }
+
+    if (item.type === 'time_at_max') {
+      const peakAngle = analysis.waveType === 'cos' ? 0 : Math.PI / 2;
+      const thetaMax = positiveModulo2Pi(peakAngle - analysis.phiRadSigned);
+      const tSec = thetaMax / analysis.omegaRad;
+      const tMs = tSec * 1000;
+      return {
+        item,
+        color,
+        answerText: `${tMs.toFixed(3)} ms (+${analysis.amplitude} ${unit})`,
+        formulaLine: `t_max = (${peakAngle.toFixed(4)} - (${analysis.phiRadSigned.toFixed(3)})) / ${omegaStr}`,
+        detailSteps: [
+          `Syarat Maksimum (+A): sudut fase = ${analysis.waveType === 'cos' ? '0 rad' : 'π/2 (1.5708 rad)'}`,
+          `θ_max = (${peakAngle.toFixed(4)} - (${analysis.phiRadSigned.toFixed(3)})) mod 2π = ${thetaMax.toFixed(4)} rad`,
+          `t_max = ${thetaMax.toFixed(4)} / ${omegaStr} = ${tSec.toFixed(6)} s = ${tMs.toFixed(3)} ms`,
+        ],
+        plotPoint: {
+          tMs,
+          yVal: analysis.amplitude,
+          yLabel: analysis.amplitude.toFixed(1),
+          xLabel: `↑ ${tMs.toFixed(3)}`,
+          shortBadge: `(${item.label}) Peak ${tMs.toFixed(3)} ms`,
+        },
+      };
+    }
+
+    if (item.type === 'time_at_min') {
+      const troughAngle =
+        analysis.waveType === 'cos' ? Math.PI : (3 * Math.PI) / 2;
+      const thetaMin = positiveModulo2Pi(troughAngle - analysis.phiRadSigned);
+      const tSec = thetaMin / analysis.omegaRad;
+      const tMs = tSec * 1000;
+      return {
+        item,
+        color,
+        answerText: `${tMs.toFixed(3)} ms (-${analysis.amplitude} ${unit})`,
+        formulaLine: `t_min = (${troughAngle.toFixed(4)} - (${analysis.phiRadSigned.toFixed(3)})) / ${omegaStr}`,
+        detailSteps: [
+          `Syarat Minimum (-A): sudut fase = ${analysis.waveType === 'cos' ? 'π (3.1416 rad)' : '3π/2 (4.7124 rad)'}`,
+          `θ_min = (${troughAngle.toFixed(4)} - (${analysis.phiRadSigned.toFixed(3)})) mod 2π = ${thetaMin.toFixed(4)} rad`,
+          `t_min = ${thetaMin.toFixed(4)} / ${omegaStr} = ${tSec.toFixed(6)} s = ${tMs.toFixed(3)} ms`,
+        ],
+        plotPoint: {
+          tMs,
+          yVal: -analysis.amplitude,
+          yLabel: (-analysis.amplitude).toFixed(1),
+          xLabel: `↑ ${tMs.toFixed(3)}`,
+          shortBadge: `(${item.label}) Min ${tMs.toFixed(3)} ms`,
+        },
+      };
+    }
+
+    // 'time_at_zero': first zero crossing for t > 0
+    const zeroAngles =
+      analysis.waveType === 'cos'
+        ? [Math.PI / 2, (3 * Math.PI) / 2]
+        : [0, Math.PI];
+    const candidates = zeroAngles.map((z) => {
+      const mod = positiveModulo2Pi(z - analysis.phiRadSigned);
+      return mod < 1e-9 ? Math.PI : mod;
+    });
+    const thetaZero = Math.min(...candidates);
+    const tSec = thetaZero / analysis.omegaRad;
+    const tMs = tSec * 1000;
+    return {
+      item,
+      color,
+      answerText: `${tMs.toFixed(3)} ms (0 ${unit})`,
+      formulaLine: `t_zero = ${thetaZero.toFixed(4)} / ${omegaStr} = ${tMs.toFixed(3)} ms`,
+      detailSteps: [
+        `Syarat Zero Crossing (${varName} = 0): θ = ${thetaZero.toFixed(4)} rad`,
+        `t_zero = ${thetaZero.toFixed(4)} / ${omegaStr} = ${tSec.toFixed(6)} s = ${tMs.toFixed(3)} ms`,
+      ],
+      plotPoint: {
+        tMs,
+        yVal: 0,
+        yLabel: '0',
+        xLabel: `↑ ${tMs.toFixed(3)}`,
+        shortBadge: `(${item.label}) Zero ${tMs.toFixed(3)} ms`,
+      },
+    };
+  });
 }
