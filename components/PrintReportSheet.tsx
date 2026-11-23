@@ -98,14 +98,14 @@ export default function PrintReportSheet({
   }, [angleLogs]);
 
   // ==========================================================================
-  // HERO OSCILLOSCOPE SVG DIMENSIONS (Large, Spacious & Easy to Read)
+  // FULL-PAGE HERO OSCILLOSCOPE SVG DIMENSIONS (A4 Landscape Page 1 Main Focus)
   // ==========================================================================
-  const svgW = 860;
-  const svgH = 350;
-  const padL = 74;
-  const padR = 46;
-  const padT = 36;
-  const padB = 46;
+  const svgW = 1040;
+  const svgH = 485;
+  const padL = 82;
+  const padR = 54;
+  const padT = 42;
+  const padB = 56;
   const innerW = svgW - padL - padR;
   const innerH = svgH - padT - padB;
 
@@ -187,8 +187,8 @@ export default function PrintReportSheet({
     for (const item of byY) {
       let y = item.y;
       for (const occ of occupiedYs) {
-        if (Math.abs(y - occ) < 12) {
-          y = y >= occ ? occ + 12.5 : occ - 12.5;
+        if (Math.abs(y - occ) < 16) {
+          y = y >= occ ? occ + 16.5 : occ - 16.5;
         }
       }
       item.adjYLabel = y;
@@ -201,7 +201,7 @@ export default function PrintReportSheet({
     for (const item of byX) {
       let tier = 0;
       for (const prev of placedX) {
-        if (Math.abs(item.x - prev.x) < 76 && prev.tier === tier) {
+        if (Math.abs(item.x - prev.x) < 96 && prev.tier === tier) {
           tier = (tier + 1) % 3;
         }
       }
@@ -274,548 +274,471 @@ export default function PrintReportSheet({
   return (
     <div className="hidden print-only-a4 text-slate-900 bg-[#f8fafc] font-sans">
       {/* ====================================================================
-          TOP COMPACT HEADER & 5-COLUMN STUDENT IDENTITY BAR
+          PAGE 1 WRAPPER (Contains Header + Main Content for Page 1)
          ==================================================================== */}
-      <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-1.5 mb-1.5 shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-1">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-sm font-extrabold text-slate-900 tracking-tight leading-none">
-                Matematika Teknik (M12)
-              </h1>
-              <p className="text-[7.5px] text-slate-500 mt-0.5">
-                Angle Conversion (Deg/Rad/DMS) &amp; Sinusoidal Waveform Simulator
-              </p>
+      <div className="print-page">
+        {/* TOP COMPACT HEADER & 5-COLUMN STUDENT IDENTITY BAR */}
+        <div className="bg-white border border-slate-200 rounded-xl px-4 py-2 mb-2 shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-1.5">
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-base font-extrabold text-slate-900 tracking-tight leading-none">
+                  Matematika Teknik (M12)
+                </h1>
+                <p className="text-[8px] text-slate-500 mt-0.5">
+                  Angle Conversion (Deg/Rad/DMS) &amp; Sinusoidal Waveform Simulator
+                </p>
+              </div>
+              <span className="text-slate-300">|</span>
+              <div>
+                <div className="text-[7.5px] font-extrabold uppercase tracking-wider text-cyan-600 leading-none">
+                  D3 TEKNIK ELEKTRONIKA • MODUL PRAKTIKUM M12
+                </div>
+                <div className="text-[11.5px] font-extrabold text-slate-900 leading-tight mt-0.5">
+                  {activeTab === 'sinusoidal' &&
+                    `Grafik Gelombang Sinusoidal AC — ${analysis.questionLabel}`}
+                  {activeTab === 'konversi' &&
+                    'Kalkulator Konversi Satuan Sudut (Derajat Desimal, Radian & DMS)'}
+                  {activeTab === 'tujuan' &&
+                    'Tujuan Pembelajaran, Referensi Rumus & Scientific Calculator'}
+                </div>
+              </div>
             </div>
-            <span className="text-slate-300">|</span>
-            <div>
-              <div className="text-[7px] font-extrabold uppercase tracking-wider text-cyan-600 leading-none">
-                D3 TEKNIK ELEKTRONIKA • MODUL PRAKTIKUM M12
+
+            <div className="flex items-center gap-2">
+              <div className="border border-slate-300 rounded-full px-3 py-0.5 text-[8.5px] font-bold text-slate-800 bg-slate-50">
+                D3 Teknik Elektronika • POLINES
               </div>
-              <div className="text-[10.5px] font-extrabold text-slate-900 leading-tight">
-                {activeTab === 'sinusoidal' &&
-                  `Simulator Gelombang Sinusoidal & Analisis AC — ${analysis.questionLabel}`}
-                {activeTab === 'konversi' &&
-                  'Kalkulator Konversi Satuan Sudut (Derajat Desimal, Radian & DMS)'}
-                {activeTab === 'tujuan' &&
-                  'Tujuan Pembelajaran, Referensi Rumus & Scientific Calculator'}
-              </div>
+              {activeTab === 'sinusoidal' && (
+                <div className="border border-cyan-600 rounded-full px-2.5 py-0.5 text-[8px] font-mono font-bold text-cyan-800 bg-cyan-50">
+                  Halaman 1 / 2
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="border border-slate-300 rounded-full px-3 py-0.5 text-[8px] font-bold text-slate-800 bg-slate-50">
-            D3 Teknik Elektronika • POLINES
+          {/* 5-Column Student Identity Row */}
+          <div className="grid grid-cols-5 gap-2 text-[8.5px]">
+            <div className="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-0.5 bg-slate-50/70">
+              <span className="text-[7.5px] font-semibold text-slate-500 shrink-0">
+                Nama:
+              </span>
+              <strong className="text-slate-900 truncate">
+                {displayStudent.nama}
+              </strong>
+            </div>
+            <div className="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-0.5 bg-slate-50/70">
+              <span className="text-[7.5px] font-semibold text-slate-500 shrink-0">
+                NIM:
+              </span>
+              <strong className="font-mono text-slate-900 truncate">
+                {displayStudent.nim}
+              </strong>
+            </div>
+            <div className="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-0.5 bg-slate-50/70">
+              <span className="text-[7.5px] font-semibold text-slate-500 shrink-0">
+                Kelas:
+              </span>
+              <strong className="font-mono text-slate-900 truncate">
+                {displayStudent.kelas}
+              </strong>
+            </div>
+            <div className="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-0.5 bg-slate-50/70">
+              <span className="text-[7.5px] font-semibold text-slate-500 shrink-0">
+                Prodi:
+              </span>
+              <strong className="text-slate-900 truncate">
+                {displayStudent.prodi}
+              </strong>
+            </div>
+            <div className="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-0.5 bg-slate-50/70">
+              <span className="text-[7.5px] font-semibold text-slate-500 shrink-0">
+                Jurusan:
+              </span>
+              <strong className="text-slate-900 truncate">
+                {displayStudent.jurusan}
+              </strong>
+            </div>
           </div>
         </div>
 
-        {/* 5-Column Student Identity Row */}
-        <div className="grid grid-cols-5 gap-2 text-[8px]">
-          <div className="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-0.5 bg-slate-50/70">
-            <span className="text-[7px] font-semibold text-slate-500 shrink-0">
-              Nama:
-            </span>
-            <strong className="text-slate-900 truncate">
-              {displayStudent.nama}
-            </strong>
-          </div>
-          <div className="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-0.5 bg-slate-50/70">
-            <span className="text-[7px] font-semibold text-slate-500 shrink-0">
-              NIM:
-            </span>
-            <strong className="font-mono text-slate-900 truncate">
-              {displayStudent.nim}
-            </strong>
-          </div>
-          <div className="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-0.5 bg-slate-50/70">
-            <span className="text-[7px] font-semibold text-slate-500 shrink-0">
-              Kelas:
-            </span>
-            <strong className="font-mono text-slate-900 truncate">
-              {displayStudent.kelas}
-            </strong>
-          </div>
-          <div className="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-0.5 bg-slate-50/70">
-            <span className="text-[7px] font-semibold text-slate-500 shrink-0">
-              Prodi:
-            </span>
-            <strong className="text-slate-900 truncate">
-              {displayStudent.prodi}
-            </strong>
-          </div>
-          <div className="flex items-center gap-1.5 border border-slate-200 rounded px-2 py-0.5 bg-slate-50/70">
-            <span className="text-[7px] font-semibold text-slate-500 shrink-0">
-              Jurusan:
-            </span>
-            <strong className="text-slate-900 truncate">
-              {displayStudent.jurusan}
-            </strong>
-          </div>
-        </div>
-      </div>
-
-      {/* ====================================================================
-          TAB 3 A4 LANDSCAPE SHEET: HERO GRAPH CENTERPIECE + DYNAMIC SUB-PROBLEMS
-         ==================================================================== */}
-      {activeTab === 'sinusoidal' && (
-        <div className="space-y-1.5 break-inside-avoid">
-          {/* TIER 1: Input (2 cols) | HERO OSCILLOSCOPE GRAPH (7 cols) | Dynamic Sub-Problem Answers (3 cols) */}
-          <div className="grid grid-cols-12 gap-2 items-stretch">
-            {/* LEFT (2 cols): Problem Details & Wave Parameters */}
-            <div className="col-span-2 bg-white border border-slate-200 rounded-xl p-2 flex flex-col justify-between shadow-sm">
-              <div className="space-y-1">
-                <div className="border-b-2 border-cyan-600 pb-0.5">
-                  <h3 className="text-[9px] font-extrabold text-slate-900">
-                    Detail &amp; Parameter Soal
-                  </h3>
-                </div>
-
-                <div className="space-y-1 text-[7.5px]">
-                  <div>
-                    <div className="text-[6.5px] text-slate-500 font-semibold">
-                      No. Soal
-                    </div>
-                    <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-slate-50/60 font-bold text-slate-900 truncate">
-                      {analysis.questionLabel}
-                    </div>
-                  </div>
-
-                  {sinusoidalParams.problemDetails && (
-                    <div>
-                      <div className="text-[6.5px] text-slate-500 font-semibold">
-                        Keterangan Soal
-                      </div>
-                      <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-slate-50/40 text-[6.5px] text-slate-700 leading-tight line-clamp-4">
-                        {sinusoidalParams.problemDetails}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <div className="text-[6.5px] text-slate-500 font-semibold">
-                      Besaran AC
-                    </div>
-                    <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-white font-semibold text-slate-900 truncate">
-                      {quantityName} — {varName}(t) [{unitSymbol}]
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-1">
-                    <div>
-                      <div className="text-[6.5px] text-slate-500 font-semibold">
-                        Amplitudo A
-                      </div>
-                      <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-white font-bold text-slate-900">
-                        {analysis.amplitude} {unitSymbol}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[6.5px] text-slate-500 font-semibold">
-                        ω [notasi π]
-                      </div>
-                      <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-white font-bold text-slate-900">
-                        {analysis.omegaInput}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-cyan-50/70 border border-cyan-200 rounded px-1.5 py-0.5 text-center font-mono text-[7px] font-bold text-cyan-900">
-                    {fmtComma(analysis.omegaRad, 1)} rad/s | f ={' '}
-                    {fmtComma(analysis.frequencyHz, 1)} Hz
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-1">
-                    <div>
-                      <div className="text-[6.5px] text-slate-500 font-semibold">
-                        Tanda Fase
-                      </div>
-                      <div className="border border-slate-200 rounded px-1 py-0.5 bg-white font-semibold text-slate-900 truncate">
-                        {shortPhaseName} ({analysis.phaseSign})
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[6.5px] text-slate-500 font-semibold">
-                        |φ| (rad)
-                      </div>
-                      <div className="border border-slate-200 rounded px-1.5 py-0.5 bg-white font-bold text-slate-900">
-                        {analysis.phiRadUnsigned}
-                      </div>
-                    </div>
-                  </div>
+        {/* ====================================================================
+            TAB 3 — PAGE 1 OF 2 (A4 LANDSCAPE):
+            FULL-WIDTH HERO OSCILLOSCOPE GRAPH AS THE MAIN FOCUS
+           ==================================================================== */}
+        {activeTab === 'sinusoidal' && (
+          <div className="bg-white border-2 border-cyan-600/80 rounded-xl p-3 shadow-md flex flex-col gap-2">
+            {/* Hero Graph Header: Title, Equation Pill, Legend & Phase Status */}
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-1.5">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="px-2.5 py-0.5 rounded-md bg-cyan-600 text-white font-mono text-[9.5px] font-extrabold shrink-0">
+                  {analysis.questionLabel}
+                </span>
+                <h2 className="text-[12.5px] font-extrabold text-slate-900 tracking-tight truncate">
+                  Sketsa Gelombang Sinusoidal &amp; Plot Titik Sub-Soal
+                </h2>
+                <div className="flex items-center gap-3 text-[9px] text-slate-600 shrink-0">
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
+                    <span className="w-5 h-[2.5px] bg-cyan-400 inline-block rounded" />
+                    <span>Terukur {varName}(t)</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-5 h-0.5 border-b-2 border-dashed border-slate-400 inline-block" />
+                    <span>Acuan (φ = 0)</span>
+                  </span>
                 </div>
               </div>
 
-              {/* Status Box */}
-              <div className="mt-1 border border-slate-300 rounded-lg p-1.5 bg-slate-50">
-                <div className="text-[7.5px] font-extrabold text-slate-900 uppercase leading-tight">
-                  STATUS: {analysis.phaseStatusLabel}
-                </div>
-                <div className="text-[6.6px] text-slate-600 leading-tight mt-0.5">
-                  {statusNarrative}
-                </div>
-              </div>
-            </div>
-
-            {/* ==============================================================
-                CENTER HERO (7 cols / ~58% Page Width):
-                SKETSA GELOMBANG SINUSOIDAL (ALL DYNAMIC SUB-PROBLEM POINTS)
-               ============================================================== */}
-            <div className="col-span-7 bg-white border-2 border-cyan-600/80 rounded-xl p-2.5 shadow-md flex flex-col justify-between">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-1">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-[11px] font-extrabold text-slate-900 tracking-tight">
-                    Sketsa Gelombang Sinusoidal (Plot Titik Sub-Soal)
-                  </h3>
-                  <div className="flex items-center gap-3 text-[8px] text-slate-600">
-                    <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
-                      <span className="w-4 h-0.5 bg-cyan-400 inline-block" />
-                      <span>Terukur {varName}(t)</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="w-4 h-0.5 border-b-2 border-dashed border-slate-400 inline-block" />
-                      <span>Acuan (φ = 0)</span>
-                    </span>
-                  </div>
-                </div>
-
-                <span className="border border-cyan-600/40 rounded-md px-2.5 py-0.5 font-mono text-[9.5px] font-extrabold text-slate-950 bg-cyan-50/60">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="border border-cyan-600/40 rounded-md px-3 py-0.5 font-mono text-[11px] font-extrabold text-slate-950 bg-cyan-50/70">
                   {displayEquationComma}
                 </span>
+                <span className="border border-slate-300 rounded-md px-2.5 py-0.5 font-mono text-[9px] font-bold text-slate-800 bg-slate-100">
+                  {shortPhaseName} ({analysis.phaseSign === '0' ? '0°' : `${analysis.phaseSign}${fmtComma(analysis.phiDegUnsigned, 2)}°`})
+                </span>
               </div>
+            </div>
 
-              {/* LARGE DARK OSCILLOSCOPE CANVAS */}
-              <div className="rounded-xl bg-[#0b111e] p-1.5 border border-slate-800 flex-1 flex items-center">
-                <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-auto">
-                  <defs>
-                    <linearGradient
-                      id="printHeroWaveGrad"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.18" />
-                      <stop offset="50%" stopColor="#22d3ee" stopOpacity="0.02" />
-                      <stop offset="100%" stopColor="#22d3ee" stopOpacity="0.18" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Horizontal Graticule Gridlines */}
-                  {[-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1].map((f) => {
-                    const isMajor =
-                      f === -1 || f === -0.5 || f === 0 || f === 0.5 || f === 1;
-                    return (
-                      <line
-                        key={`h-${f}`}
-                        x1={padL}
-                        y1={mapY(f * analysis.amplitude)}
-                        x2={svgW - padR}
-                        y2={mapY(f * analysis.amplitude)}
-                        stroke={
-                          isMajor
-                            ? 'rgba(148, 163, 184, 0.16)'
-                            : 'rgba(148, 163, 184, 0.07)'
-                        }
-                        strokeWidth={isMajor ? 1 : 0.7}
-                      />
-                    );
-                  })}
-
-                  {/* Vertical Graticule Gridlines */}
-                  {xAxisQuarterTicks.map((tVal) => (
-                    <line
-                      key={`v-${tVal}`}
-                      x1={mapX(tVal)}
-                      y1={padT}
-                      x2={mapX(tVal)}
-                      y2={svgH - padB}
-                      stroke="rgba(148, 163, 184, 0.16)"
-                      strokeWidth={1}
-                    />
-                  ))}
-
-                  {/* Main Y Axis with Top Arrow */}
-                  <line
-                    x1={padL}
-                    y1={svgH - padB + 8}
-                    x2={padL}
-                    y2={padT - 10}
-                    stroke="#cbd5e1"
-                    strokeWidth={1.6}
-                  />
-                  <polygon
-                    points={`${padL},${padT - 16} ${padL - 4},${padT - 8} ${padL + 4},${padT - 8}`}
-                    fill="#cbd5e1"
-                  />
-                  <text
-                    x={padL + 6}
-                    y={padT - 14}
-                    textAnchor="start"
-                    className="fill-white font-mono text-[12px] font-bold"
+            {/* FULL-WIDTH DARK OSCILLOSCOPE CANVAS (~274mm wide on A4 Landscape!) */}
+            <div className="rounded-xl bg-[#0b111e] p-2 border border-slate-800">
+              <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-auto block">
+                <defs>
+                  <linearGradient
+                    id="printHeroWaveGrad"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
                   >
-                    {quantityName} {varName} ({unitSymbol})
-                  </text>
+                    <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.20" />
+                    <stop offset="50%" stopColor="#22d3ee" stopOpacity="0.02" />
+                    <stop offset="100%" stopColor="#22d3ee" stopOpacity="0.20" />
+                  </linearGradient>
+                </defs>
 
-                  {/* Main X Axis with Right Arrow */}
+                {/* Horizontal Graticule Gridlines */}
+                {[-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1].map((f) => {
+                  const isMajor =
+                    f === -1 || f === -0.5 || f === 0 || f === 0.5 || f === 1;
+                  return (
+                    <line
+                      key={`h-${f}`}
+                      x1={padL}
+                      y1={mapY(f * analysis.amplitude)}
+                      x2={svgW - padR}
+                      y2={mapY(f * analysis.amplitude)}
+                      stroke={
+                        isMajor
+                          ? 'rgba(148, 163, 184, 0.18)'
+                          : 'rgba(148, 163, 184, 0.08)'
+                      }
+                      strokeWidth={isMajor ? 1.1 : 0.8}
+                    />
+                  );
+                })}
+
+                {/* Vertical Graticule Gridlines */}
+                {xAxisQuarterTicks.map((tVal) => (
                   <line
-                    x1={padL - 6}
-                    y1={zeroY}
-                    x2={svgW - padR + 12}
-                    y2={zeroY}
-                    stroke="#cbd5e1"
-                    strokeWidth={1.6}
+                    key={`v-${tVal}`}
+                    x1={mapX(tVal)}
+                    y1={padT}
+                    x2={mapX(tVal)}
+                    y2={svgH - padB}
+                    stroke="rgba(148, 163, 184, 0.18)"
+                    strokeWidth={1.1}
                   />
-                  <polygon
-                    points={`${svgW - padR + 18},${zeroY} ${svgW - padR + 10},${zeroY - 4} ${svgW - padR + 10},${zeroY + 4}`}
-                    fill="#cbd5e1"
+                ))}
+
+                {/* Main Y Axis with Top Arrow */}
+                <line
+                  x1={padL}
+                  y1={svgH - padB + 8}
+                  x2={padL}
+                  y2={padT - 12}
+                  stroke="#cbd5e1"
+                  strokeWidth={1.8}
+                />
+                <polygon
+                  points={`${padL},${padT - 18} ${padL - 4.5},${padT - 9} ${padL + 4.5},${padT - 9}`}
+                  fill="#cbd5e1"
+                />
+                <text
+                  x={padL + 8}
+                  y={padT - 16}
+                  textAnchor="start"
+                  className="fill-white font-mono text-[14px] font-bold"
+                >
+                  {quantityName} {varName} ({unitSymbol})
+                </text>
+
+                {/* Main X Axis with Right Arrow */}
+                <line
+                  x1={padL - 6}
+                  y1={zeroY}
+                  x2={svgW - padR + 14}
+                  y2={zeroY}
+                  stroke="#cbd5e1"
+                  strokeWidth={1.8}
+                />
+                <polygon
+                  points={`${svgW - padR + 21},${zeroY} ${svgW - padR + 12},${zeroY - 4.5} ${svgW - padR + 12},${zeroY + 4.5}`}
+                  fill="#cbd5e1"
+                />
+                <text
+                  x={svgW - padR + 18}
+                  y={zeroY - 12}
+                  textAnchor="end"
+                  className="fill-white font-mono text-[14px] font-bold"
+                >
+                  t (ms)
+                </text>
+
+                {/* Fixed Y-Axis Ticks: +A, 0, -A */}
+                <g>
+                  <line
+                    x1={padL - 5}
+                    y1={mapY(analysis.amplitude)}
+                    x2={padL + 5}
+                    y2={mapY(analysis.amplitude)}
+                    stroke="#cbd5e1"
+                    strokeWidth={1.5}
                   />
                   <text
-                    x={svgW - padR + 16}
-                    y={zeroY - 10}
+                    x={padL - 12}
+                    y={mapY(analysis.amplitude) + 4.5}
                     textAnchor="end"
-                    className="fill-white font-mono text-[12px] font-bold"
+                    className="fill-white font-mono text-[13.5px] font-bold"
                   >
-                    t (ms)
+                    {fmtComma(analysis.amplitude, 1)}
                   </text>
 
-                  {/* Fixed Y-Axis Ticks: +A, 0, -A */}
-                  <g>
-                    <line
-                      x1={padL - 5}
-                      y1={mapY(analysis.amplitude)}
-                      x2={padL + 5}
-                      y2={mapY(analysis.amplitude)}
-                      stroke="#cbd5e1"
-                      strokeWidth={1.4}
-                    />
-                    <text
-                      x={padL - 10}
-                      y={mapY(analysis.amplitude) + 4}
-                      textAnchor="end"
-                      className="fill-white font-mono text-[11.5px] font-bold"
-                    >
-                      {fmtComma(analysis.amplitude, 1)}
-                    </text>
+                  <text
+                    x={padL - 12}
+                    y={zeroY + 4.5}
+                    textAnchor="end"
+                    className="fill-slate-300 font-mono text-[13px] font-bold"
+                  >
+                    0
+                  </text>
 
-                    <text
-                      x={padL - 10}
-                      y={zeroY + 4}
-                      textAnchor="end"
-                      className="fill-slate-300 font-mono text-[11px] font-bold"
-                    >
-                      0
-                    </text>
-
-                    <line
-                      x1={padL - 5}
-                      y1={mapY(-analysis.amplitude)}
-                      x2={padL + 5}
-                      y2={mapY(-analysis.amplitude)}
-                      stroke="#cbd5e1"
-                      strokeWidth={1.4}
-                    />
-                    <text
-                      x={padL - 10}
-                      y={mapY(-analysis.amplitude) + 4}
-                      textAnchor="end"
-                      className="fill-white font-mono text-[11.5px] font-bold"
-                    >
-                      {fmtComma(-analysis.amplitude, 1)}
-                    </text>
-                  </g>
-
-                  {/* X-Axis Quarter-Cycle Tick Numbers */}
-                  {xAxisQuarterTicks.map((tVal) => {
-                    const x = mapX(tVal);
-                    return (
-                      <g key={`xtick-${tVal}`}>
-                        <line
-                          x1={x}
-                          y1={zeroY - 4}
-                          x2={x}
-                          y2={zeroY + 4}
-                          stroke="#cbd5e1"
-                          strokeWidth={1.4}
-                        />
-                        <rect
-                          x={x - 16}
-                          y={zeroY + 6}
-                          width={32}
-                          height={15}
-                          rx={3}
-                          fill="rgba(11, 17, 30, 0.85)"
-                        />
-                        <text
-                          x={x}
-                          y={zeroY + 17}
-                          textAnchor="middle"
-                          className="fill-slate-300 font-mono text-[11px] font-semibold"
-                        >
-                          {Number(tVal.toFixed(1))}
-                        </text>
-                      </g>
-                    );
-                  })}
-
-                  {/* Area Fill + Reference Wave + Measured Cyan Wave */}
-                  <path d={measuredAreaPath} fill="url(#printHeroWaveGrad)" />
-                  <path
-                    d={refPath}
-                    fill="none"
-                    stroke="#94a3b8"
-                    strokeWidth={2}
-                    strokeDasharray="7 5"
+                  <line
+                    x1={padL - 5}
+                    y1={mapY(-analysis.amplitude)}
+                    x2={padL + 5}
+                    y2={mapY(-analysis.amplitude)}
+                    stroke="#cbd5e1"
+                    strokeWidth={1.5}
                   />
-                  <path
-                    d={measuredPath}
-                    fill="none"
+                  <text
+                    x={padL - 12}
+                    y={mapY(-analysis.amplitude) + 4.5}
+                    textAnchor="end"
+                    className="fill-white font-mono text-[13.5px] font-bold"
+                  >
+                    {fmtComma(-analysis.amplitude, 1)}
+                  </text>
+                </g>
+
+                {/* X-Axis Quarter-Cycle Tick Numbers */}
+                {xAxisQuarterTicks.map((tVal) => {
+                  const x = mapX(tVal);
+                  return (
+                    <g key={`xtick-${tVal}`}>
+                      <line
+                        x1={x}
+                        y1={zeroY - 5}
+                        x2={x}
+                        y2={zeroY + 5}
+                        stroke="#cbd5e1"
+                        strokeWidth={1.5}
+                      />
+                      <rect
+                        x={x - 19}
+                        y={zeroY + 7}
+                        width={38}
+                        height={18}
+                        rx={4}
+                        fill="rgba(11, 17, 30, 0.88)"
+                      />
+                      <text
+                        x={x}
+                        y={zeroY + 20}
+                        textAnchor="middle"
+                        className="fill-slate-200 font-mono text-[12.5px] font-semibold"
+                      >
+                        {Number(tVal.toFixed(1))}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Area Fill + Reference Wave + Measured Cyan Wave */}
+                <path d={measuredAreaPath} fill="url(#printHeroWaveGrad)" />
+                <path
+                  d={refPath}
+                  fill="none"
+                  stroke="#94a3b8"
+                  strokeWidth={2.3}
+                  strokeDasharray="8 6"
+                />
+                <path
+                  d={measuredPath}
+                  fill="none"
+                  stroke="#22d3ee"
+                  strokeWidth={3.8}
+                />
+
+                {/* Measured Wave Equation Label Pill */}
+                <g>
+                  <rect
+                    x={padL + 16}
+                    y={padT + 6}
+                    width={275}
+                    height={25}
+                    rx={6}
+                    fill="rgba(8, 51, 68, 0.92)"
                     stroke="#22d3ee"
-                    strokeWidth={3.2}
+                    strokeWidth={1.2}
                   />
+                  <text
+                    x={padL + 28}
+                    y={padT + 23}
+                    className="fill-cyan-300 font-mono text-[13.5px] font-bold"
+                  >
+                    {displayEquationComma}
+                  </text>
+                </g>
 
-                  {/* Measured Wave Equation Label Pill */}
-                  <g>
-                    <rect
-                      x={padL + 14}
-                      y={padT + 4}
-                      width={235}
-                      height={20}
-                      rx={5}
-                      fill="rgba(8, 51, 68, 0.92)"
-                      stroke="#22d3ee"
-                      strokeWidth={1}
-                    />
-                    <text
-                      x={padL + 24}
-                      y={padT + 18}
-                      className="fill-cyan-300 font-mono text-[11.5px] font-bold"
-                    >
-                      {displayEquationComma}
-                    </text>
-                  </g>
+                {/* ALL DYNAMIC SUB-PROBLEM POINTS PLOTTED ON HERO GRAPH */}
+                {plottablePoints.map((sp) => {
+                  const pt = sp.plotPoint!;
+                  const badgeW = 92;
+                  const badgeH = 22;
+                  const badgeY = zeroY + 28 + sp.xTier * 25;
+                  const clampedBadgeX = Math.max(
+                    padL + 4,
+                    Math.min(svgW - padR - badgeW - 4, sp.x - badgeW / 2)
+                  );
 
-                  {/* ==========================================================
-                      ALL DYNAMIC SUB-PROBLEM POINTS PLOTTED ON HERO GRAPH
-                     ========================================================== */}
-                  {plottablePoints.map((sp) => {
-                    const pt = sp.plotPoint!;
-                    const badgeW = 76;
-                    const badgeH = 18;
-                    const badgeY = zeroY + 22 + sp.xTier * 20;
-                    const clampedBadgeX = Math.max(
-                      padL + 4,
-                      Math.min(svgW - padR - badgeW - 4, sp.x - badgeW / 2)
-                    );
+                  return (
+                    <g key={sp.item.id}>
+                      {/* Y-axis dynamic colored tick & label */}
+                      <line
+                        x1={padL - 5}
+                        y1={sp.y}
+                        x2={padL + 5}
+                        y2={sp.y}
+                        stroke={sp.color}
+                        strokeWidth={1.8}
+                      />
+                      <text
+                        x={padL - 12}
+                        y={sp.adjYLabel + 4.5}
+                        textAnchor="end"
+                        fill={sp.color}
+                        className="font-mono text-[13px] font-bold"
+                      >
+                        {fmtComma(pt.yVal, 2)}
+                      </text>
 
-                    return (
-                      <g key={sp.item.id}>
-                        {/* Y-axis dynamic colored tick & label */}
-                        <line
-                          x1={padL - 4}
-                          y1={sp.y}
-                          x2={padL + 4}
-                          y2={sp.y}
-                          stroke={sp.color}
-                          strokeWidth={1.5}
-                        />
-                        <text
-                          x={padL - 10}
-                          y={sp.adjYLabel + 4}
-                          textAnchor="end"
-                          fill={sp.color}
-                          className="font-mono text-[11px] font-bold"
-                        >
-                          {fmtComma(pt.yVal, 1)}
-                        </text>
+                      {/* Horizontal & Vertical Dashed Projection Lines */}
+                      <line
+                        x1={padL}
+                        y1={sp.y}
+                        x2={sp.x}
+                        y2={sp.y}
+                        stroke={sp.color}
+                        strokeWidth={1.8}
+                        strokeDasharray="5 4"
+                      />
+                      <line
+                        x1={sp.x}
+                        y1={sp.y}
+                        x2={sp.x}
+                        y2={zeroY}
+                        stroke={sp.color}
+                        strokeWidth={1.8}
+                        strokeDasharray="5 4"
+                      />
 
-                        {/* Horizontal & Vertical Dashed Projection Lines */}
-                        <line
-                          x1={padL}
-                          y1={sp.y}
-                          x2={sp.x}
-                          y2={sp.y}
-                          stroke={sp.color}
-                          strokeWidth={1.5}
-                          strokeDasharray="4 4"
-                        />
-                        <line
-                          x1={sp.x}
-                          y1={sp.y}
-                          x2={sp.x}
-                          y2={zeroY}
-                          stroke={sp.color}
-                          strokeWidth={1.5}
-                          strokeDasharray="4 4"
-                        />
+                      {/* Glowing Halo + Dot Marker */}
+                      <circle
+                        cx={sp.x}
+                        cy={sp.y}
+                        r={10}
+                        fill={sp.color}
+                        opacity={0.22}
+                      />
+                      <circle
+                        cx={sp.x}
+                        cy={sp.y}
+                        r={6}
+                        fill={sp.color}
+                        stroke="#0b111e"
+                        strokeWidth={2}
+                      />
 
-                        {/* Dot Marker */}
-                        <circle
-                          cx={sp.x}
-                          cy={sp.y}
-                          r={5}
-                          fill={sp.color}
-                          stroke="#0b111e"
-                          strokeWidth={1.8}
-                        />
+                      {/* Letter Circle Badge near Dot */}
+                      <circle
+                        cx={sp.x}
+                        cy={sp.y > padT + 34 ? sp.y - 20 : sp.y + 20}
+                        r={11}
+                        fill="#0b111e"
+                        stroke={sp.color}
+                        strokeWidth={1.8}
+                      />
+                      <text
+                        x={sp.x}
+                        y={sp.y > padT + 34 ? sp.y - 15.5 : sp.y + 24.5}
+                        textAnchor="middle"
+                        fill={sp.color}
+                        className="font-mono text-[12px] font-bold"
+                      >
+                        {sp.item.label}
+                      </text>
 
-                        {/* Letter Circle Badge near Dot */}
-                        <circle
-                          cx={sp.x}
-                          cy={sp.y > padT + 28 ? sp.y - 16 : sp.y + 16}
-                          r={9}
-                          fill="#0b111e"
-                          stroke={sp.color}
-                          strokeWidth={1.5}
-                        />
-                        <text
-                          x={sp.x}
-                          y={sp.y > padT + 28 ? sp.y - 12.5 : sp.y + 19.5}
-                          textAnchor="middle"
-                          fill={sp.color}
-                          className="font-mono text-[10px] font-bold"
-                        >
-                          {sp.item.label}
-                        </text>
+                      {/* Short X-Axis Callout Pill (for t > 0) */}
+                      {pt.tMs > 0 && (
+                        <g>
+                          <rect
+                            x={clampedBadgeX}
+                            y={badgeY}
+                            width={badgeW}
+                            height={badgeH}
+                            rx={5}
+                            fill="rgba(11, 17, 30, 0.94)"
+                            stroke={sp.color}
+                            strokeWidth={1.3}
+                          />
+                          <text
+                            x={clampedBadgeX + badgeW / 2}
+                            y={badgeY + 15}
+                            textAnchor="middle"
+                            fill={sp.color}
+                            className="font-mono text-[11.5px] font-bold"
+                          >
+                            ({sp.item.label}) {fmtComma(pt.tMs, 2)}ms
+                          </text>
+                        </g>
+                      )}
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
 
-                        {/* X-Axis Callout Pill (for t > 0) */}
-                        {pt.tMs > 0 && (
-                          <g>
-                            <rect
-                              x={clampedBadgeX}
-                              y={badgeY}
-                              width={badgeW}
-                              height={badgeH}
-                              rx={4}
-                              fill="rgba(11, 17, 30, 0.94)"
-                              stroke={sp.color}
-                              strokeWidth={1.1}
-                            />
-                            <text
-                              x={clampedBadgeX + badgeW / 2}
-                              y={badgeY + 12.5}
-                              textAnchor="middle"
-                              fill={sp.color}
-                              className="font-mono text-[9.5px] font-bold"
-                            >
-                              ({sp.item.label}) {fmtComma(pt.tMs, 2)}ms
-                            </text>
-                          </g>
-                        )}
-                      </g>
-                    );
-                  })}
-                </svg>
-              </div>
-
-              {/* Dynamic Color-Coded Key Points Legend Bar directly under the Hero Graph */}
-              <div className="flex flex-wrap gap-1.5 pt-1.5 text-[7.5px] font-mono">
+            {/* Bottom Summary Strip on Page 1: Short Key-Point Badges + Core Wave Metrics */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+              <div className="flex flex-wrap items-center gap-1.5 text-[8.5px] font-mono">
                 {plottablePoints.map((sp) => (
                   <div
                     key={sp.item.id}
                     style={{ borderColor: sp.color }}
-                    className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-50 border text-slate-900"
+                    className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-50 border text-slate-900"
                   >
                     <span
-                      className="w-2 h-2 rounded-full shrink-0"
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: sp.color }}
                     />
                     <span>
@@ -827,168 +750,315 @@ export default function PrintReportSheet({
                   </div>
                 ))}
               </div>
-            </div>
 
-            {/* RIGHT (3 cols): Dynamic Hasil Analisis Jawaban Soal */}
-            <div className="col-span-3 bg-white border border-slate-200 rounded-xl p-2.5 flex flex-col justify-between shadow-sm">
-              <div>
-                <div className="border-b-2 border-cyan-600 pb-1 mb-1.5">
-                  <h3 className="text-[9.5px] font-extrabold text-slate-900">
-                    Hasil Analisis Jawaban Soal ({solvedSubProblems.length} Sub-Soal)
+              <div className="flex items-center gap-2 text-[8.5px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded-md px-2.5 py-0.5">
+                <span>
+                  A = <strong>{analysis.amplitude} {unitSymbol}</strong>
+                </span>
+                <span className="text-slate-300">|</span>
+                <span>
+                  ω = <strong>{analysis.omegaInput}</strong> ({fmtComma(analysis.omegaRad, 2)} rad/s)
+                </span>
+                <span className="text-slate-300">|</span>
+                <span>
+                  T = <strong>{fmtComma(analysis.periodMs, 2)} ms</strong>
+                </span>
+                <span className="text-slate-300">|</span>
+                <span>
+                  f = <strong>{fmtComma(analysis.frequencyHz, 2)} Hz</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ====================================================================
+          TAB 3 — PAGE 2 OF 2 (A4 LANDSCAPE):
+          EXTENSIVE 11-DECIMAL ANALYSIS, FULL DERIVATIONS & EXPERIMENT LOG
+         ==================================================================== */}
+      {activeTab === 'sinusoidal' && (
+        <div className="print-page print-page-break space-y-2.5">
+          {/* Page 2 Compact Header Bar */}
+          <div className="bg-white border border-slate-200 rounded-xl px-4 py-1.5 shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="font-extrabold text-[11px] text-slate-900">
+                Matematika Teknik (M12)
+              </span>
+              <span className="text-slate-300">|</span>
+              <span className="text-[10px] font-bold text-cyan-700">
+                Hasil Analisis Presisi 11 Desimal &amp; Uraian Langkah Perhitungan — {analysis.questionLabel}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 font-mono text-[8.5px]">
+              <span className="text-slate-600">
+                {displayStudent.nama} ({displayStudent.nim} • {displayStudent.kelas})
+              </span>
+              <span className="border border-cyan-600 rounded-full px-2.5 py-0.5 font-bold text-cyan-800 bg-cyan-50">
+                Halaman 2 / 2
+              </span>
+            </div>
+          </div>
+
+          {/* TIER 1: Detail & Parameter Soal (4 cols) + Hasil Analisis Jawaban Presisi 11 Desimal (8 cols) */}
+          <div className="grid grid-cols-12 gap-2.5 items-stretch">
+            {/* LEFT (4 cols): Problem Details & Full Wave Parameters */}
+            <div className="col-span-4 bg-white border border-slate-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+              <div className="space-y-1.5">
+                <div className="border-b-2 border-cyan-600 pb-1">
+                  <h3 className="text-[10.5px] font-extrabold text-slate-900">
+                    Detail &amp; Parameter Soal
                   </h3>
                 </div>
 
-                <div className="space-y-1.5 text-[7.8px]">
-                  {solvedSubProblems.slice(0, 8).map((sp) => (
+                <div className="space-y-1.5 text-[8.5px]">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div>
+                      <div className="text-[7px] text-slate-500 font-semibold">
+                        Nomor Soal
+                      </div>
+                      <div className="border border-slate-200 rounded px-2 py-0.5 bg-slate-50 font-bold text-slate-900">
+                        {analysis.questionLabel}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[7px] text-slate-500 font-semibold">
+                        Besaran AC
+                      </div>
+                      <div className="border border-slate-200 rounded px-2 py-0.5 bg-white font-semibold text-slate-900">
+                        {quantityName} — {varName}(t) [{unitSymbol}]
+                      </div>
+                    </div>
+                  </div>
+
+                  {sinusoidalParams.problemDetails && (
+                    <div>
+                      <div className="text-[7px] text-slate-500 font-semibold">
+                        Keterangan / Detail Soal
+                      </div>
+                      <div className="border border-slate-200 rounded px-2 py-1 bg-slate-50/50 text-[8px] text-slate-700 leading-snug">
+                        {sinusoidalParams.problemDetails}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="text-[7px] text-slate-500 font-semibold">
+                      Persamaan Gelombang Sinusoidal
+                    </div>
+                    <div className="border border-cyan-200 rounded px-2 py-1 bg-cyan-50/70 font-mono text-[9.5px] font-extrabold text-cyan-950 text-center">
+                      {displayEquationComma}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div>
+                      <div className="text-[7px] text-slate-500 font-semibold">
+                        Amplitudo A
+                      </div>
+                      <div className="border border-slate-200 rounded px-2 py-0.5 bg-white font-mono font-bold text-slate-900">
+                        {analysis.amplitude} {unitSymbol}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[7px] text-slate-500 font-semibold">
+                        ω [notasi π]
+                      </div>
+                      <div className="border border-slate-200 rounded px-2 py-0.5 bg-white font-mono font-bold text-slate-900">
+                        {analysis.omegaInput}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[7px] text-slate-500 font-semibold">
+                        |φ| (rad)
+                      </div>
+                      <div className="border border-slate-200 rounded px-2 py-0.5 bg-white font-mono font-bold text-slate-900">
+                        {analysis.phiRadUnsigned}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Fase Box */}
+              <div className="mt-2 border border-slate-300 rounded-lg p-2 bg-slate-50">
+                <div className="text-[8.5px] font-extrabold text-slate-900 uppercase leading-tight">
+                  STATUS FASE: {analysis.phaseStatusLabel}
+                </div>
+                <div className="text-[7.8px] text-slate-600 leading-snug mt-0.5">
+                  {statusNarrative}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT (8 cols): Extensive 11-Decimal Sub-Problem Answer Cards */}
+            <div className="col-span-8 bg-white border border-slate-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+              <div>
+                <div className="border-b-2 border-cyan-600 pb-1 mb-2 flex items-center justify-between">
+                  <h3 className="text-[10.5px] font-extrabold text-slate-900">
+                    Hasil Analisis Jawaban Soal — Presisi 11 Desimal ({solvedSubProblems.length} Sub-Soal)
+                  </h3>
+                  <span className="text-[7.5px] font-mono text-slate-500">
+                    Engine: Decimal.js 50-Digit
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {solvedSubProblems.map((sp) => (
                     <div
                       key={sp.item.id}
                       style={{ borderLeftColor: sp.color }}
-                      className="p-1.5 rounded-lg bg-slate-50/70 border border-slate-200 border-l-4"
+                      className={`p-2 rounded-lg bg-slate-50/70 border border-slate-200 border-l-4 ${
+                        sp.item.type === 'params' ? 'col-span-2' : ''
+                      }`}
                     >
-                      <div className="text-[7px] text-slate-600 font-semibold leading-tight">
+                      <div className="text-[8px] text-slate-600 font-semibold leading-tight">
                         ({sp.item.label}) {sp.item.prompt}
                       </div>
-                      <div className="font-mono font-bold text-slate-950 text-[7.6px] mt-0.5 leading-snug break-words">
-                        {fmtCommaStr(sp.answerText)}
+                      <div className="font-mono font-extrabold text-slate-950 text-[9.5px] mt-0.5 leading-snug break-words">
+                        = {fmtCommaStr(sp.answerText)}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-1.5 pt-1 border-t border-slate-100 text-[7px] text-slate-500 font-mono flex items-center justify-between">
-                <span>Periode T = {fmtComma(analysis.periodMs, 2)} ms</span>
-                <span>ω = {fmtComma(analysis.omegaRad, 2)} rad/s</span>
+              <div className="mt-2 pt-1.5 border-t border-slate-100 text-[8px] text-slate-500 font-mono flex items-center justify-between">
+                <span>Periode T = {fmtComma(analysis.periodS, 4)} s ({fmtComma(analysis.periodMs, 2)} ms)</span>
+                <span>Frekuensi f = {fmtComma(analysis.frequencyHz, 2)} Hz</span>
+                <span>ω = {fmtComma(analysis.omegaRad, 6)} rad/s</span>
               </div>
             </div>
           </div>
 
-          {/* TIER 2: Dynamic Uraian Langkah Perhitungan Lengkap (7 cols) + Log Percobaan (5 cols) */}
-          <div className="grid grid-cols-12 gap-2 items-stretch">
-            {/* LEFT (7 cols): Dynamic Step-by-Step Derivations for User's Sub-Problems */}
-            <div className="col-span-7 bg-white border border-slate-200 rounded-xl p-2 shadow-sm">
-              <div className="border-b-2 border-cyan-600 pb-0.5 mb-1">
-                <h3 className="text-[9px] font-extrabold text-slate-900">
-                  Uraian Langkah Perhitungan Lengkap
-                </h3>
-              </div>
+          {/* TIER 2: Full-Width Uraian Langkah Perhitungan Lengkap (11-Decimal Derivations) */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+            <div className="border-b-2 border-cyan-600 pb-1 mb-2 flex items-center justify-between">
+              <h3 className="text-[10.5px] font-extrabold text-slate-900">
+                Uraian Langkah Perhitungan Lengkap (Presisi 11 Desimal)
+              </h3>
+              <span className="text-[7.5px] font-mono text-slate-500">
+                Rumus Substitusi &amp; Hasil Eksak
+              </span>
+            </div>
 
-              <div
-                className={`grid gap-1.5 ${
-                  solvedSubProblems.length <= 4 ? 'grid-cols-4' : 'grid-cols-5'
-                }`}
-              >
-                {solvedSubProblems.slice(0, 5).map((sp) => (
-                  <div
-                    key={sp.item.id}
-                    style={{ borderTopColor: sp.color }}
-                    className="border border-slate-200 border-t-2 rounded-lg p-1.5 bg-slate-50/40 space-y-0.5"
-                  >
-                    <div className="text-[7px] font-extrabold text-slate-900 border-b border-slate-200 pb-0.5 truncate">
-                      ({sp.item.label}) {sp.item.prompt}
-                    </div>
-                    <div className="font-mono text-[6px] text-slate-800 space-y-0.5 leading-tight break-words">
-                      {sp.detailSteps.map((line, i) => (
-                        <div
-                          key={i}
-                          className={
-                            i === sp.detailSteps.length - 1
-                              ? 'font-bold text-slate-950'
-                              : ''
-                          }
-                        >
-                          {fmtCommaStr(line)}
-                        </div>
-                      ))}
-                    </div>
+            <div
+              className={`grid gap-2 ${
+                solvedSubProblems.length <= 3
+                  ? 'grid-cols-3'
+                  : solvedSubProblems.length === 4
+                  ? 'grid-cols-4'
+                  : 'grid-cols-5'
+              }`}
+            >
+              {solvedSubProblems.slice(0, 10).map((sp) => (
+                <div
+                  key={sp.item.id}
+                  style={{ borderTopColor: sp.color }}
+                  className="border border-slate-200 border-t-[3px] rounded-lg p-2 bg-slate-50/50 space-y-1 min-w-0"
+                >
+                  <div className="text-[8px] font-extrabold text-slate-900 border-b border-slate-200 pb-0.5 leading-tight">
+                    ({sp.item.label}) {sp.item.prompt}
                   </div>
-                ))}
-              </div>
+                  <div className="font-mono text-[7.4px] text-slate-800 space-y-0.5 leading-snug break-words">
+                    {sp.detailSteps.map((line, i) => (
+                      <div
+                        key={i}
+                        className={
+                          i === sp.detailSteps.length - 1
+                            ? 'font-bold text-slate-950 pt-0.5'
+                            : ''
+                        }
+                      >
+                        {fmtCommaStr(line)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* TIER 3: Full-Width Log Percobaan Gelombang Sinusoidal */}
+          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+            <div className="border-b-2 border-cyan-600 pb-1 mb-1.5 flex items-center justify-between">
+              <h3 className="text-[10px] font-extrabold text-slate-900">
+                Log Percobaan Gelombang Sinusoidal AC
+              </h3>
+              <span className="text-[8px] font-mono text-slate-500">
+                Total: {effectiveWaveformLogs.length} Percobaan
+              </span>
             </div>
 
-            {/* RIGHT (5 cols): Log Percobaan Gelombang Sinusoidal */}
-            <div className="col-span-5 bg-white border border-slate-200 rounded-xl p-2 shadow-sm">
-              <div className="border-b-2 border-cyan-600 pb-0.5 mb-1 flex items-center justify-between">
-                <h3 className="text-[9px] font-extrabold text-slate-900">
-                  Log Percobaan Gelombang Sinusoidal
-                </h3>
-                <span className="text-[7px] font-mono text-slate-500">
-                  Total: {effectiveWaveformLogs.length} Percobaan
-                </span>
-              </div>
+            <table className="w-full border-collapse text-[8.2px]">
+              <thead>
+                <tr className="bg-slate-50 text-slate-800 border-b border-slate-200 font-bold">
+                  <th className="py-1 px-2 text-left w-7">No</th>
+                  <th className="py-1 px-2 text-left">No. Soal</th>
+                  <th className="py-1 px-2 text-left">Besaran</th>
+                  <th className="py-1 px-2 text-left">Amplitudo (A)</th>
+                  <th className="py-1 px-2 text-left">ω (rad/s)</th>
+                  <th className="py-1 px-2 text-left">φ (rad / °)</th>
+                  <th className="py-1 px-2 text-left">Persamaan Gelombang</th>
+                  <th className="py-1 px-2 text-left">Status Fase</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {effectiveWaveformLogs.slice(0, 6).map((log, idx) => {
+                  const isLag = log.phaseSign === '-';
+                  const isLead = log.phaseSign === '+';
+                  const unit = log.quantityType === 'i' ? 'A' : 'V';
+                  const besaranLabel =
+                    log.quantityType === 'i' ? 'Arus (i)' : 'Tegangan (v)';
+                  const signStr = isLag ? '-' : isLead ? '+' : '';
+                  const phiDisplay =
+                    log.phaseSign === '0'
+                      ? '0 (0,00°)'
+                      : `${signStr}${fmtComma(Math.abs(log.phiRad), 3)} (${signStr}${fmtComma(Math.abs(log.phiDeg), 2)}°)`;
 
-              <table className="w-full border-collapse text-[7.2px]">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-800 border-b border-slate-200 font-bold">
-                    <th className="py-1 px-1.5 text-left w-5">No</th>
-                    <th className="py-1 px-1.5 text-left">No. Soal</th>
-                    <th className="py-1 px-1.5 text-left">Besaran</th>
-                    <th className="py-1 px-1.5 text-left">A</th>
-                    <th className="py-1 px-1.5 text-left">ω</th>
-                    <th className="py-1 px-1.5 text-left">φ (rad / °)</th>
-                    <th className="py-1 px-1.5 text-left">Persamaan</th>
-                    <th className="py-1 px-1.5 text-left">Fase</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {effectiveWaveformLogs.slice(0, 4).map((log, idx) => {
-                    const isLag = log.phaseSign === '-';
-                    const isLead = log.phaseSign === '+';
-                    const unit = log.quantityType === 'i' ? 'A' : 'V';
-                    const besaranLabel =
-                      log.quantityType === 'i' ? 'Arus (i)' : 'Tegangan (v)';
-                    const signStr = isLag ? '-' : isLead ? '+' : '';
-                    const phiDisplay =
-                      log.phaseSign === '0'
-                        ? '0 (0,00°)'
-                        : `${signStr}${fmtComma(Math.abs(log.phiRad), 3)} (${signStr}${fmtComma(Math.abs(log.phiDeg), 2)}°)`;
-
-                    return (
-                      <tr key={log.id}>
-                        <td className="py-1 px-1.5 text-slate-700">
-                          {idx + 1}
-                        </td>
-                        <td className="py-1 px-1.5 font-medium text-slate-900 truncate max-w-[78px]">
-                          {log.questionLabel || 'PE 118 NO 7'}
-                        </td>
-                        <td className="py-1 px-1.5 text-slate-700">
-                          {besaranLabel}
-                        </td>
-                        <td className="py-1 px-1.5 text-slate-900 font-semibold">
-                          {log.amplitude} {unit}
-                        </td>
-                        <td className="py-1 px-1.5 font-mono text-slate-900">
-                          {log.omegaInput}
-                        </td>
-                        <td className="py-1 px-1.5 font-mono text-slate-800">
-                          {phiDisplay}
-                        </td>
-                        <td className="py-1 px-1.5 font-mono font-semibold text-slate-900">
-                          {fmtCommaStr(log.equation)}
-                        </td>
-                        <td className="py-1 px-1.5">
-                          <span
-                            className={`inline-block px-1.5 py-0.5 rounded border text-[6.8px] font-bold whitespace-nowrap ${
-                              isLag
-                                ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                : isLead
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-slate-100 text-slate-700 border-slate-300'
-                            }`}
-                          >
-                            {isLag
-                              ? 'Lagging (-)'
+                  return (
+                    <tr key={log.id}>
+                      <td className="py-1 px-2 text-slate-700">{idx + 1}</td>
+                      <td className="py-1 px-2 font-medium text-slate-900">
+                        {log.questionLabel || 'PE 118 NO 7'}
+                      </td>
+                      <td className="py-1 px-2 text-slate-700">
+                        {besaranLabel}
+                      </td>
+                      <td className="py-1 px-2 text-slate-900 font-semibold font-mono">
+                        {log.amplitude} {unit}
+                      </td>
+                      <td className="py-1 px-2 font-mono text-slate-900">
+                        {log.omegaInput}
+                      </td>
+                      <td className="py-1 px-2 font-mono text-slate-800">
+                        {phiDisplay}
+                      </td>
+                      <td className="py-1 px-2 font-mono font-semibold text-slate-900">
+                        {fmtCommaStr(log.equation)}
+                      </td>
+                      <td className="py-1 px-2">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded border text-[7.5px] font-bold whitespace-nowrap ${
+                            isLag
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
                               : isLead
-                              ? 'Leading (+)'
-                              : 'In Phase (0)'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-slate-100 text-slate-700 border-slate-300'
+                          }`}
+                        >
+                          {isLag
+                            ? 'Lagging (-)'
+                            : isLead
+                            ? 'Leading (+)'
+                            : 'In Phase (0)'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

@@ -118,10 +118,10 @@ select.cafe-input option {
   }
 }
 
-/* Dedicated A4 Landscape Single-Page Compact Print Layout */
+/* Dedicated A4 Landscape Print Layout (2-Page for Tab 3, 1-Page for Tabs 1 & 2) */
 @page {
   size: A4 landscape;
-  margin: 5mm 7mm;
+  margin: 6mm 8mm;
 }
 
 @media print {
@@ -148,11 +148,18 @@ select.cafe-input option {
   .print-only-a4 {
     display: block !important;
     width: 100% !important;
-    max-width: 283mm !important;
+    max-width: 281mm !important;
     margin: 0 auto !important;
-    page-break-after: avoid !important;
-    page-break-before: avoid !important;
+  }
+
+  .print-page {
+    width: 100% !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  .print-page-break {
+    page-break-before: always !important;
+    break-before: page !important;
   }
 }
