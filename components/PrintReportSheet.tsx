@@ -101,15 +101,15 @@ export default function PrintReportSheet({
   // FULL-PAGE HERO OSCILLOSCOPE SVG DIMENSIONS (A4 Landscape Page 1 Main Focus)
   // ==========================================================================
   const svgW = 1040;
-  const svgH = 485;
-  const padL = 82;
+  const svgH = 490;
+  const padL = 90;
   const padR = 54;
-  const padT = 42;
-  const padB = 56;
+  const padT = 50;
+  const padB = 46;
   const innerW = svgW - padL - padR;
   const innerH = svgH - padT - padB;
 
-  const yLimit = analysis.isValid ? 1.24 * analysis.amplitude : 6;
+  const yLimit = analysis.isValid ? 1.28 * analysis.amplitude : 6;
 
   const mapX = (tMs: number) =>
     padL + (maxTimeMs > 0 ? (tMs / maxTimeMs) * innerW : 0);
@@ -167,46 +167,127 @@ export default function PrintReportSheet({
 
   const displayEquationComma = fmtCommaStr(analysis.equation);
 
-  // Plottable sub-problems with anti-overlap Y-axis and X-axis coordinates
+  // Plottable sub-problems with full collision-free Y-axis labels, letter badges, and X-axis pills
   const plottablePoints = useMemo(() => {
     if (!analysis.isValid) return [];
     const fixedYs = [mapY(analysis.amplitude), zeroY, mapY(-analysis.amplitude)];
+    const ampTol = Math.max(1e-6, analysis.amplitude * 0.005);
+    const pillW = 96;
+
     const rawList = solvedSubProblems
       .filter((sp) => sp.plotPoint !== null && sp.plotPoint.tMs >= 0 && sp.plotPoint.tMs <= maxTimeMs)
-      .map((sp) => ({
-        ...sp,
-        x: mapX(sp.plotPoint!.tMs),
-        y: mapY(sp.plotPoint!.yVal),
-        adjYLabel: mapY(sp.plotPoint!.yVal),
-        xTier: 0,
-      }));
+      .map((sp) => {
+        const pt = sp.plotPoint!;
+        const x = mapX(pt.tMs);
+        const y = mapY(pt.yVal);
+        const matchesFixedY =
+          Math.abs(pt.yVal - analysis.amplitude) < ampTol ||
+          Math.abs(pt.yVal) < ampTol ||
+          Math.abs(pt.yVal + analysis.amplitude) < ampTol;
+        return {
+          ...sp,
+          x,
+          y,
+          showYLabel: !matchesFixedY,
+          adjYLabel: y,
+          badgeCx: x,
+          badgeCy: y - 21,
+          pillX: Math.max(
+            padL + 6,
+            Math.min(svgW - padR - pillW - 6, x - pillW / 2)
+          ),
+          pillY: zeroY + 28,
+          pillSide: pt.yVal >= 0 ? ('below' as const) : ('above' as const),
+          xTier: 0,
+        };
+      });
 
-    // De-collide Y-axis labels
-    const byY = [...rawList].sort((a, b) => a.y - b.y);
+    // 1. De-collide Y-axis labels strictly against fixed (+A, 0, -A) and each other
+    const yLabelItems = rawList
+      .filter((item) => item.showYLabel)
+      .sort((a, b) => a.y - b.y);
     const occupiedYs = [...fixedYs];
-    for (const item of byY) {
+    for (const item of yLabelItems) {
       let y = item.y;
-      for (const occ of occupiedYs) {
-        if (Math.abs(y - occ) < 16) {
-          y = y >= occ ? occ + 16.5 : occ - 16.5;
+      for (let pass = 0; pass < 6; pass++) {
+        let moved = false;
+        for (const occ of occupiedYs) {
+          if (Math.abs(y - occ) < 17) {
+            y = y >= occ ? occ + 17.5 : occ - 17.5;
+            moved = true;
+          }
         }
+        if (!moved) break;
       }
+      y = Math.max(padT + 8, Math.min(svgH - padB - 8, y));
       item.adjYLabel = y;
       occupiedYs.push(y);
     }
 
-    // Stagger X-axis time pills
-    const byX = [...rawList].sort((a, b) => a.x - b.x);
-    const placedX: { x: number; tier: number }[] = [];
-    for (const item of byX) {
-      let tier = 0;
-      for (const prev of placedX) {
-        if (Math.abs(item.x - prev.x) < 96 && prev.tier === tier) {
-          tier = (tier + 1) % 3;
+    // 2. Place letter circle badges ((b), (c), (d), (e)) clear of Y-axis, dots, and each other
+    const placedBadges: { cx: number; cy: number }[] = [];
+    const allDots = rawList.map((r) => ({ x: r.x, y: r.y }));
+    const byXAll = [...rawList].sort((a, b) => a.x - b.x);
+    for (const item of byXAll) {
+      const isPositive = item.plotPoint!.yVal >= 0;
+      const nearYAxis = item.x < padL + 22;
+      const candidates = nearYAxis
+        ? [
+            { cx: padL + 20, cy: isPositive ? item.y + 14 : item.y - 14 },
+            { cx: padL + 20, cy: isPositive ? item.y - 16 : item.y + 16 },
+            { cx: padL + 30, cy: item.y },
+          ]
+        : [
+            { cx: item.x, cy: isPositive ? item.y - 22 : item.y + 22 },
+            { cx: item.x, cy: isPositive ? item.y + 22 : item.y - 22 },
+            { cx: item.x + 22, cy: isPositive ? item.y - 16 : item.y + 16 },
+            { cx: item.x - 22, cy: isPositive ? item.y - 16 : item.y + 16 },
+            { cx: item.x + 24, cy: item.y },
+          ];
+
+      let chosen = candidates[0];
+      for (const cand of candidates) {
+        const clampedCx = Math.max(padL + 16, Math.min(svgW - padR - 14, cand.cx));
+        const clampedCy = Math.max(padT + 12, Math.min(svgH - padB - 12, cand.cy));
+        const hitsBadge = placedBadges.some(
+          (b) => Math.hypot(clampedCx - b.cx, clampedCy - b.cy) < 26
+        );
+        const hitsOtherDot = allDots.some(
+          (d) =>
+            (Math.abs(d.x - item.x) > 0.5 || Math.abs(d.y - item.y) > 0.5) &&
+            Math.hypot(clampedCx - d.x, clampedCy - d.y) < 19
+        );
+        if (!hitsBadge && !hitsOtherDot) {
+          chosen = { cx: clampedCx, cy: clampedCy };
+          break;
         }
       }
+      item.badgeCx = Math.max(padL + 16, Math.min(svgW - padR - 14, chosen.cx));
+      item.badgeCy = Math.max(padT + 12, Math.min(svgH - padB - 12, chosen.cy));
+      placedBadges.push({ cx: item.badgeCx, cy: item.badgeCy });
+    }
+
+    // 3. Stagger X-axis time pills ONLY for t > 0, placed on the empty side opposite the curve
+    const placedBelow: { pillX: number; tier: number }[] = [];
+    const placedAbove: { pillX: number; tier: number }[] = [];
+    for (const item of byXAll) {
+      if (item.plotPoint!.tMs <= 0) continue;
+      const pool = item.pillSide === 'below' ? placedBelow : placedAbove;
+      let tier = 0;
+      while (
+        pool.some(
+          (p) => p.tier === tier && Math.abs(item.pillX - p.pillX) < pillW + 8
+        )
+      ) {
+        tier++;
+        if (tier > 3) break;
+      }
       item.xTier = tier;
-      placedX.push({ x: item.x, tier });
+      item.pillY =
+        item.pillSide === 'below'
+          ? zeroY + 29 + tier * 26
+          : zeroY - 30 - tier * 26;
+      pool.push({ pillX: item.pillX, tier });
     }
 
     return rawList;
@@ -589,41 +670,43 @@ export default function PrintReportSheet({
                   strokeWidth={3.8}
                 />
 
-                {/* Measured Wave Equation Label Pill */}
-                <g>
-                  <rect
-                    x={padL + 16}
-                    y={padT + 6}
-                    width={275}
-                    height={25}
-                    rx={6}
-                    fill="rgba(8, 51, 68, 0.92)"
-                    stroke="#22d3ee"
-                    strokeWidth={1.2}
-                  />
-                  <text
-                    x={padL + 28}
-                    y={padT + 23}
-                    className="fill-cyan-300 font-mono text-[13.5px] font-bold"
-                  >
-                    {displayEquationComma}
-                  </text>
-                </g>
+                {/* Measured Wave Equation Label Pill — Placed cleanly in Top-Right Header Strip (Zero Overlap) */}
+                {(() => {
+                  const eqPillW = Math.max(245, Math.min(360, displayEquationComma.length * 8.6 + 26));
+                  const eqPillX = svgW - padR - eqPillW;
+                  return (
+                    <g>
+                      <rect
+                        x={eqPillX}
+                        y={8}
+                        width={eqPillW}
+                        height={26}
+                        rx={6}
+                        fill="rgba(8, 51, 68, 0.94)"
+                        stroke="#22d3ee"
+                        strokeWidth={1.2}
+                      />
+                      <text
+                        x={eqPillX + eqPillW / 2}
+                        y={25.5}
+                        textAnchor="middle"
+                        className="fill-cyan-300 font-mono text-[13px] font-bold"
+                      >
+                        {displayEquationComma}
+                      </text>
+                    </g>
+                  );
+                })()}
 
                 {/* ALL DYNAMIC SUB-PROBLEM POINTS PLOTTED ON HERO GRAPH */}
                 {plottablePoints.map((sp) => {
                   const pt = sp.plotPoint!;
-                  const badgeW = 92;
+                  const badgeW = 96;
                   const badgeH = 22;
-                  const badgeY = zeroY + 28 + sp.xTier * 25;
-                  const clampedBadgeX = Math.max(
-                    padL + 4,
-                    Math.min(svgW - padR - badgeW - 4, sp.x - badgeW / 2)
-                  );
 
                   return (
                     <g key={sp.item.id}>
-                      {/* Y-axis dynamic colored tick & label */}
+                      {/* Y-axis dynamic colored tick & non-duplicate label */}
                       <line
                         x1={padL - 5}
                         y1={sp.y}
@@ -632,15 +715,30 @@ export default function PrintReportSheet({
                         stroke={sp.color}
                         strokeWidth={1.8}
                       />
-                      <text
-                        x={padL - 12}
-                        y={sp.adjYLabel + 4.5}
-                        textAnchor="end"
-                        fill={sp.color}
-                        className="font-mono text-[13px] font-bold"
-                      >
-                        {fmtComma(pt.yVal, 2)}
-                      </text>
+                      {sp.showYLabel && (
+                        <>
+                          {Math.abs(sp.adjYLabel - sp.y) > 4 && (
+                            <line
+                              x1={padL - 10}
+                              y1={sp.adjYLabel}
+                              x2={padL - 4}
+                              y2={sp.y}
+                              stroke={sp.color}
+                              strokeWidth={1}
+                              opacity={0.75}
+                            />
+                          )}
+                          <text
+                            x={padL - 13}
+                            y={sp.adjYLabel + 4.5}
+                            textAnchor="end"
+                            fill={sp.color}
+                            className="font-mono text-[12.5px] font-bold"
+                          >
+                            {fmtComma(pt.yVal, 2)}
+                          </text>
+                        </>
+                      )}
 
                       {/* Horizontal & Vertical Dashed Projection Lines */}
                       <line
@@ -679,18 +777,18 @@ export default function PrintReportSheet({
                         strokeWidth={2}
                       />
 
-                      {/* Letter Circle Badge near Dot */}
+                      {/* Collision-Free Letter Circle Badge near Dot */}
                       <circle
-                        cx={sp.x}
-                        cy={sp.y > padT + 34 ? sp.y - 20 : sp.y + 20}
+                        cx={sp.badgeCx}
+                        cy={sp.badgeCy}
                         r={11}
                         fill="#0b111e"
                         stroke={sp.color}
                         strokeWidth={1.8}
                       />
                       <text
-                        x={sp.x}
-                        y={sp.y > padT + 34 ? sp.y - 15.5 : sp.y + 24.5}
+                        x={sp.badgeCx}
+                        y={sp.badgeCy + 4.2}
                         textAnchor="middle"
                         fill={sp.color}
                         className="font-mono text-[12px] font-bold"
@@ -698,22 +796,32 @@ export default function PrintReportSheet({
                         {sp.item.label}
                       </text>
 
-                      {/* Short X-Axis Callout Pill (for t > 0) */}
+                      {/* Short X-Axis Callout Pill (for t > 0, placed on empty side opposite curve) */}
                       {pt.tMs > 0 && (
                         <g>
+                          <line
+                            x1={sp.x}
+                            y1={zeroY}
+                            x2={sp.x}
+                            y2={sp.pillSide === 'below' ? sp.pillY : sp.pillY + badgeH}
+                            stroke={sp.color}
+                            strokeWidth={1.1}
+                            strokeDasharray="2 3"
+                            opacity={0.65}
+                          />
                           <rect
-                            x={clampedBadgeX}
-                            y={badgeY}
+                            x={sp.pillX}
+                            y={sp.pillY}
                             width={badgeW}
                             height={badgeH}
                             rx={5}
-                            fill="rgba(11, 17, 30, 0.94)"
+                            fill="rgba(11, 17, 30, 0.95)"
                             stroke={sp.color}
                             strokeWidth={1.3}
                           />
                           <text
-                            x={clampedBadgeX + badgeW / 2}
-                            y={badgeY + 15}
+                            x={sp.pillX + badgeW / 2}
+                            y={sp.pillY + 15}
                             textAnchor="middle"
                             fill={sp.color}
                             className="font-mono text-[11.5px] font-bold"
